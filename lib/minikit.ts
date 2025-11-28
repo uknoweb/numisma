@@ -9,9 +9,8 @@ import { MiniKit, type VerificationLevel } from '@worldcoin/minikit-js';
 export const initMiniKit = () => {
   if (typeof window === 'undefined') return;
   
-  MiniKit.install({
-    appId: process.env.NEXT_PUBLIC_WORLD_APP_ID || 'app_staging_xxxxx',
-  });
+  const appId = process.env.NEXT_PUBLIC_WORLD_APP_ID || 'app_staging_xxxxx';
+  MiniKit.install(appId);
 };
 
 /**
