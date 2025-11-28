@@ -11,12 +11,16 @@ import {
   Coins,
   CandlestickChart,
 } from "lucide-react";
+import { useState } from "react";
+import TradingChartMobile from "./TradingChartMobile";
 
 export default function Dashboard() {
   const user = useAppStore((state) => state.user);
   const setCurrentView = useAppStore((state) => state.setCurrentView);
   const positions = useAppStore((state) => state.positions);
   const currentUserPioneer = useAppStore((state) => state.currentUserPioneer);
+  
+  const [showTradingChart, setShowTradingChart] = useState(false);
 
   if (!user) return null;
 
@@ -218,7 +222,7 @@ export default function Dashboard() {
         <div className={`grid ${isPioneerTop100 ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
           {/* Plataforma */}
           <button
-            onClick={() => setCurrentView("plataforma")}
+            onClick={() => setShowTradingChart(true)}
             className="card-premium p-5 flex flex-col items-start gap-4 active:scale-[0.98] transition-transform"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFD700]/20 to-[#D4AF37]/20 flex items-center justify-center">
@@ -315,6 +319,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      
+      {/* Trading Chart Modal */}
+      {showTradingChart && (
+        <TradingChartMobile onClose={() => setShowTradingChart(false)} />
+      )}
     </div>
   );
 }

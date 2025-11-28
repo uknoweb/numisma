@@ -184,20 +184,20 @@ export default function Staking() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[--color-black] via-[--color-gray-900] to-[--color-gray-800] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-black p-4 pb-24">
+      <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-4 pb-2">
           <Button
             onClick={() => setCurrentView("dashboard")}
             variant="ghost"
-            className="gap-2"
+            className="text-[--color-gold] hover:text-[--color-gold]/80"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al Menú
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
           </Button>
-          <h1 className="text-2xl font-bold text-[--color-gold]">Staking</h1>
-          <div className="w-32" />
+          <h1 className="text-xl font-bold text-[--color-gold]">💰 Staking</h1>
+          <div className="w-20" />
         </div>
 
         {/* Reclamo de Recompensas */}
