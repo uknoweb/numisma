@@ -303,7 +303,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
                 position.type === "long",
                 position.symbol
               );
-              const netPnl = pnl - fees.closing;
+              const netPnl = pnl - fees; // fees es el fee de cierre
               const isProfit = netPnl > 0;
 
               return (
