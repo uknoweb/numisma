@@ -11,17 +11,14 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronUp,
-  LineChart,
 } from "lucide-react";
 import { formatNumber, formatCurrency, calculatePnL } from "@/lib/utils";
-import TradingChart from "./TradingChart";
 
 export default function Plataforma() {
   const setCurrentView = useAppStore((state) => state.setCurrentView);
   const positions = useAppStore((state) => state.positions);
   const user = useAppStore((state) => state.user);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [showChart, setShowChart] = useState(false);
 
   const openPositions = positions.filter((p) => p.status === "open");
   const closedPositions = positions.filter((p) => p.status === "closed");
@@ -289,19 +286,6 @@ export default function Plataforma() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Botón para abrir gráfico */}
-        <Button
-          onClick={() => setShowChart(true)}
-          size="lg"
-          className="w-full h-14 text-base font-semibold gap-2"
-        >
-          <LineChart className="w-5 h-5" />
-          Abrir Gráfico de Trading
-        </Button>
-
-        {/* Modal de gráfico */}
-        {showChart && <TradingChart onClose={() => setShowChart(false)} />}
       </div>
     </div>
   );

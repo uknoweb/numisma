@@ -1224,6 +1224,8 @@ export default function Staking() {
                 min={10}
                 max={user.balanceWld}
                 step={10}
+                placeholder="Ingresa cantidad en WLD"
+                aria-label="Cantidad a depositar"
                 className="w-full bg-[--color-gray-800] text-white rounded-lg px-4 py-3 border border-[--color-gold]/30 focus:border-[--color-gold] focus:outline-none"
               />
               <div className="text-xs text-gray-500">

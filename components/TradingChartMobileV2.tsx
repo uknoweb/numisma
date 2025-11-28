@@ -165,12 +165,14 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
           <button
             onClick={() => setShowPositions(!showPositions)}
             className="text-xs px-3 py-1.5 rounded bg-[--color-gray-800] text-[--color-gold] border border-[--color-gold]/30"
+            aria-label="Ver posiciones abiertas"
           >
             Posiciones ({myPositionsFiltered.length})
           </button>
           <button 
             onClick={onClose} 
             className="text-white p-1.5 hover:bg-[--color-gray-800] rounded active:scale-95"
+            aria-label="Cerrar ventana de trading"
           >
             <X className="w-5 h-5" />
           </button>
@@ -313,6 +315,8 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
               min={0.10}
               max={maxAmount}
               step={0.10}
+              placeholder="0.10"
+              aria-label="Monto de la posición"
               className="flex-1 bg-transparent text-white text-lg font-bold outline-none"
             />
             <span className="text-sm text-gray-400">{balanceSymbol}</span>
