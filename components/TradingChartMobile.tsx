@@ -74,7 +74,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
         currentMarketPrice,
         position.amount,
         position.leverage,
-        position.direction,
+        position.type,
         position.symbol
       );
       
@@ -113,13 +113,19 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
     }
 
     addPosition({
+      id: `pos_${Date.now()}`,
+      userId: user.id,
       symbol: selectedPair,
-      direction,
+      type: direction,
       entryPrice: currentPrice,
+      currentPrice: currentPrice,
       amount,
       leverage: selectedLeverage,
       pnl: 0,
-      currentPrice,
+      pnlPercentage: 0,
+      openedAt: new Date(),
+      closedAt: null,
+      status: "open" as const,
     });
 
     setAmount(0.10);
@@ -241,6 +247,8 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
               className="w-full bg-[--color-gray-800] text-white rounded-lg px-3 py-2 text-sm"
               min="0.10"
               step="0.01"
+              placeholder="0.10"
+              aria-label="Cantidad para trading"
             />
           </div>
 
@@ -292,7 +300,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
                 position.currentPrice,
                 position.amount,
                 position.leverage,
-                position.direction,
+                position.type,
                 position.symbol
               );
               const netPnl = pnl - fees.closing;
@@ -308,12 +316,12 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
                       <span className="text-sm font-bold text-white">{position.symbol}</span>
                       <span
                         className={`text-xs px-2 py-0.5 rounded ${
-                          position.direction === "long"
+                          position.type === "long"
                             ? "bg-green-600 text-white"
                             : "bg-red-600 text-white"
                         }`}
                       >
-                        {position.direction.toUpperCase()}
+                        {position.type.toUpperCase()}
                       </span>
                       <span className="text-xs text-gray-400">x{position.leverage}</span>
                     </div>
