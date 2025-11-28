@@ -112,13 +112,21 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
       }
     }
 
-    addPosition(
-      selectedPair,
-      direction,
+    addPosition({
+      id: `pos_${Date.now()}`,
+      userId: user.id,
+      symbol: selectedPair,
+      type: direction,
+      entryPrice: currentPrice,
+      currentPrice: currentPrice,
       amount,
-      selectedLeverage,
-      currentPrice
-    );
+      leverage: selectedLeverage,
+      pnl: 0,
+      pnlPercentage: 0,
+      openedAt: new Date(),
+      closedAt: null,
+      status: "open" as const,
+    });
 
     alert(`✅ Posición ${direction.toUpperCase()} abierta\n${amount} @ ${currentPrice.toFixed(selectedPair === "NUMA/WLD" ? 6 : 2)}`);
   };
