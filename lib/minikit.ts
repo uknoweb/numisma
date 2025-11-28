@@ -121,26 +121,28 @@ export async function sendTransaction(params: {
 
 /**
  * Obtener información del wallet del usuario
+ * NOTA: API deprecated en MiniKit, usar user.walletAddress del store
  */
-export function getWalletInfo() {
-  if (typeof window === 'undefined') return null;
-  
-  const walletAddress = MiniKit.walletAddress;
-  
-  return {
-    address: walletAddress,
-    isConnected: !!walletAddress,
-  };
-}
+// export function getWalletInfo() {
+//   if (typeof window === 'undefined') return null;
+//   
+//   const walletAddress = MiniKit.walletAddress;
+//   
+//   return {
+//     address: walletAddress,
+//     isConnected: !!walletAddress,
+//   };
+// }
 
 /**
  * Verificar si la app está corriendo dentro de World App
+ * NOTA: API deprecated en MiniKit, detectar por user agent o contexto
  */
-export function isInsideWorldApp(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  return MiniKit.isInstalled();
-}
+// export function isInsideWorldApp(): boolean {
+//   if (typeof window === 'undefined') return false;
+//   
+//   return MiniKit.isInstalled();
+// }
 
 /**
  * Copiar al clipboard (útil para compartir referidos)
