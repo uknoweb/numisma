@@ -188,7 +188,7 @@ export async function getPioneerList(): Promise<string[]> {
       functionName: 'getPioneerList',
     });
     
-    return pioneers;
+    return [...pioneers] as string[];
   } catch (error) {
     console.error('Error getting pioneer list:', error);
     return [];
