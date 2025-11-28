@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { MiniKitProvider } from "@/components/MiniKitProvider";
 
 export const metadata: Metadata = {
   title: "Numisma - Plataforma Educativa de Trading",
@@ -23,9 +24,11 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
       <body className="antialiased overflow-x-hidden">
-        <div className="min-h-screen w-full max-w-full">
-          {children}
-        </div>
+        <MiniKitProvider>
+          <div className="min-h-screen w-full max-w-full">
+            {children}
+          </div>
+        </MiniKitProvider>
       </body>
     </html>
   );

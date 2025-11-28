@@ -74,7 +74,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
         currentMarketPrice,
         position.amount,
         position.leverage,
-        position.type,
+        position.type === "long",
         position.symbol
       );
       
@@ -300,7 +300,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
                 position.currentPrice,
                 position.amount,
                 position.leverage,
-                position.type,
+                position.type === "long",
                 position.symbol
               );
               const netPnl = pnl - fees.closing;
