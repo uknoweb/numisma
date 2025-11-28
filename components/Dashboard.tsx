@@ -94,52 +94,67 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Balance Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Balance Cards - Estilo DIAMANTE con glassmorphism */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
           {/* Balance NUMA */}
-          <div className="card-premium p-4">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Wallet className="w-3.5 h-3.5 text-[#FFD700]" />
-              <span className="text-[10px] text-gray-500 uppercase tracking-wide">NUMA</span>
+          <div className="card-premium p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[#FFD700] opacity-5 rounded-full blur-2xl"></div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFD700] to-[#D4AF37] flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-black" />
+              </div>
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">NUMA</span>
             </div>
-            <div className="text-xl font-bold text-[#FFD700]">
+            <div className="text-3xl font-bold text-[#FFD700] mb-1">
               {formatNumber(user.balanceNuma, 0)}
             </div>
-            <div className="text-[10px] text-gray-600 mt-1">
+            <div className="text-xs text-gray-500">
               ≈ {formatNumber(user.balanceNuma * 0.001, 2)} WLD
             </div>
           </div>
 
           {/* Balance WLD */}
-          <div className="card-premium p-4">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Wallet className="w-3.5 h-3.5 text-white" />
-              <span className="text-[10px] text-gray-500 uppercase tracking-wide">WLD</span>
+          <div className="card-premium p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full blur-2xl"></div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-gray-300 flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-black" />
+              </div>
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">WLD</span>
             </div>
-            <div className="text-xl font-bold text-white">
+            <div className="text-3xl font-bold text-white mb-1">
               {formatNumber(user.balanceWld, 2)}
             </div>
-            <div className="text-[10px] text-gray-600 mt-1">
-              💰 Actualizado en vivo
+            <div className="text-xs text-gray-500">
+              💰 En vivo
             </div>
           </div>
+        </div>
 
-          {/* PnL */}
-          <div className="card-premium p-4">
-            <div className="flex items-center gap-1.5 mb-2">
-              <TrendingUp className="w-3.5 h-3.5 text-[#22c55e]" />
-              <span className="text-[10px] text-gray-500 uppercase tracking-wide">P&L</span>
+        {/* PnL Card Grande */}
+        <div className="card-premium p-6 mb-6 relative overflow-hidden">
+          <div className={`absolute top-0 right-0 w-32 h-32 ${
+            totalPnl >= 0 ? "bg-green-500" : "bg-red-500"
+          } opacity-10 rounded-full blur-3xl`}></div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-full ${
+                totalPnl >= 0 ? "bg-green-500/20" : "bg-red-500/20"
+              } flex items-center justify-center`}>
+                <TrendingUp className={`w-5 h-5 ${
+                  totalPnl >= 0 ? "text-green-400" : "text-red-400"
+                }`} />
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Ganancias/Pérdidas</div>
+                <div className="text-xs text-gray-500">{openPositions.length} posiciones abiertas</div>
+              </div>
             </div>
-            <div
-              className={`text-xl font-bold ${
-                totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"
-              }`}
-            >
-              {totalPnl >= 0 ? "+" : ""}{formatNumber(totalPnl, 1)}
-            </div>
-            <div className="text-[10px] text-gray-600 mt-1">
-              {openPositions.length} pos.
-            </div>
+          </div>
+          <div className={`text-5xl font-black ${
+            totalPnl >= 0 ? "text-green-400" : "text-red-400"
+          }`}>
+            {totalPnl >= 0 ? "+" : ""}{formatNumber(totalPnl, 2)} WLD
           </div>
         </div>
 
@@ -227,106 +242,146 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Main Action Buttons */}
-        <div className={`grid ${isPioneerTop100 ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
-          {/* Plataforma */}
+        {/* Main Action Buttons - Estilo DIAMANTE */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Trading Button */}
           <button
             onClick={() => setShowTradingChart(true)}
-            className="card-premium p-5 flex flex-col items-start gap-4 active:scale-[0.98] transition-transform"
+            className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#FFD700]/20 via-[#D4AF37]/10 to-transparent border-2 border-[#FFD700]/30 active:scale-[0.97] transition-all shadow-lg shadow-[#FFD700]/20"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFD700]/20 to-[#D4AF37]/20 flex items-center justify-center">
-              <CandlestickChart className="w-6 h-6 text-[#FFD700]" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-bold text-base text-[#FFD700] mb-1">
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#FFD700] opacity-10 rounded-full blur-2xl"></div>
+            <div className="relative z-10">
+              <div className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#FFD700] to-[#D4AF37] flex items-center justify-center shadow-lg">
+                <CandlestickChart className="w-7 h-7 text-black" />
+              </div>
+              <h3 className="font-black text-lg text-[#FFD700] mb-1">
                 Trading
               </h3>
-              <p className="text-[11px] text-gray-500 leading-relaxed">
-                Gráficos y posiciones
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Abre posiciones long/short
               </p>
             </div>
-            <ArrowRight className="w-4 h-4 text-[#FFD700] ml-auto" />
           </button>
 
-          {/* Staking */}
+          {/* Staking Button */}
           <button
             onClick={() => setCurrentView("staking")}
-            className="card-premium p-5 flex flex-col items-start gap-4 active:scale-[0.98] transition-transform"
+            className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-transparent border-2 border-purple-400/30 active:scale-[0.97] transition-all shadow-lg shadow-purple-500/20"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFD700]/20 to-[#D4AF37]/20 flex items-center justify-center">
-              <Coins className="w-6 h-6 text-[#FFD700]" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-bold text-base text-[#FFD700] mb-1">
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-purple-500 opacity-10 rounded-full blur-2xl"></div>
+            <div className="relative z-10">
+              <div className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="font-black text-lg text-purple-400 mb-1">
                 Staking
               </h3>
-              <p className="text-[11px] text-gray-500 leading-relaxed">
-                Recompensas y swap
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Recompensas y pioneros
               </p>
             </div>
-            <ArrowRight className="w-4 h-4 text-[#FFD700] ml-auto" />
           </button>
+        </div>
 
-          {/* Créditos - Solo para Top 100 Pioneros */}
-          {isPioneerTop100 && (
-            <button
-              onClick={() => setCurrentView("creditos")}
-              className="card-premium p-5 flex flex-col items-start gap-4 active:scale-[0.98] transition-transform"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFD700]/20 to-[#D4AF37]/20 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-[#FFD700]" />
+        {/* Secondary Actions */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Membresía */}
+          <button
+            onClick={() => setCurrentView("staking")}
+            className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-500/15 via-blue-600/5 to-transparent border border-blue-400/30 active:scale-[0.97] transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 flex items-center justify-center">
+                <Award className="w-5 h-5 text-blue-400" />
               </div>
               <div className="text-left">
-                <h3 className="font-bold text-base text-[#FFD700] mb-1">
-                  Créditos
-                </h3>
-                <p className="text-[11px] text-gray-500 leading-relaxed">
-                  Préstamos Pioneer
-                </p>
+                <div className="text-xs text-gray-500">Tu Plan</div>
+                <div className={`font-bold text-sm ${membershipColor}`}>
+                  {membershipLabel}
+                </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#FFD700] ml-auto" />
+            </div>
+            <div className="text-xs text-gray-400">
+              ⏰ {timeRemaining}
+            </div>
+          </button>
+
+          {/* Pioneer Status */}
+          {currentUserPioneer ? (
+            <button
+              onClick={() => setCurrentView("staking")}
+              className={`relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br ${
+                isPioneerTop100 
+                  ? "from-[#FFD700]/15 via-[#D4AF37]/5 to-transparent border-2 border-[#FFD700]/30" 
+                  : "from-gray-500/15 via-gray-600/5 to-transparent border border-gray-400/30"
+              } active:scale-[0.97] transition-all`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isPioneerTop100 
+                    ? "bg-gradient-to-br from-[#FFD700]/30 to-[#D4AF37]/30" 
+                    : "bg-gray-500/30"
+                }`}>
+                  <Award className={`w-5 h-5 ${isPioneerTop100 ? "text-[#FFD700]" : "text-gray-400"}`} />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs text-gray-500">Pionero</div>
+                  <div className={`font-bold text-sm ${isPioneerTop100 ? "text-[#FFD700]" : "text-gray-400"}`}>
+                    #{currentUserPioneer.rank}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                {isPioneerTop100 ? "✅ Top 100" : "⏳ En espera"}
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrentView("staking")}
+              className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-amber-500/15 via-amber-600/5 to-transparent border border-amber-400/30 active:scale-[0.97] transition-all"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-amber-600/30 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs text-gray-500">Diario</div>
+                  <div className="font-bold text-sm text-amber-400">
+                    {user.membership.dailyRewards}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                🎁 NUMA tokens
+              </div>
             </button>
           )}
         </div>
 
-        {/* Quick Stats */}
-        <div className="card-premium p-4">
-          <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-4">Estadísticas</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
-              <div className="text-xl font-bold text-[#FFD700]">
-                x{user.membership.maxLeverage}
+        {/* Estadísticas de Trading */}
+        {positions.length > 0 && (
+          <div className="card-premium p-5">
+            <div className="text-xs text-gray-400 uppercase mb-4 font-semibold tracking-wider">📊 Estadísticas</div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-black/40 rounded-xl">
+                <div className="text-2xl font-bold text-white">{positions.length}</div>
+                <div className="text-[10px] text-gray-500 mt-1">Total</div>
               </div>
-              <div className="text-[10px] text-gray-600 mt-1">
-                Apalancamiento
+              <div className="text-center p-3 bg-black/40 rounded-xl">
+                <div className="text-2xl font-bold text-green-400">
+                  {positions.filter((p) => p.status === "closed" && p.pnl > 0).length}
+                </div>
+                <div className="text-[10px] text-gray-500 mt-1">Ganados</div>
               </div>
-            </div>
-            <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
-              <div className="text-xl font-bold text-white">
-                {formatNumber(user.balanceNuma + user.balanceWld * 1000, 0)}
-              </div>
-              <div className="text-[10px] text-gray-600 mt-1">
-                Capital (NUMA)
-              </div>
-            </div>
-            <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
-              <div className="text-xl font-bold text-[#22c55e]">
-                {positions.filter((p) => p.status === "closed" && p.pnl > 0).length}
-              </div>
-              <div className="text-[10px] text-gray-600 mt-1">
-                Ganadores
-              </div>
-            </div>
-            <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
-              <div className="text-xl font-bold text-[#ef4444]">
-                {positions.filter((p) => p.status === "closed" && p.pnl < 0).length}
-              </div>
-              <div className="text-[10px] text-gray-600 mt-1">
-                Perdedores
+              <div className="text-center p-3 bg-black/40 rounded-xl">
+                <div className="text-2xl font-bold text-red-400">
+                  {positions.filter((p) => p.status === "closed" && p.pnl < 0).length}
+                </div>
+                <div className="text-[10px] text-gray-500 mt-1">Perdidos</div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
       
       {/* Trading Chart Modal - Nueva versión estilo MEXC */}
