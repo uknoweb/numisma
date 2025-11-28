@@ -25,7 +25,9 @@ export function formatCurrency(
 }
 
 // Calcular tiempo restante en formato legible
-export function formatTimeRemaining(endDate: Date): string {
+export function formatTimeRemaining(endDate: Date | null): string {
+  if (!endDate) return "∞";
+  
   const now = new Date();
   const diff = endDate.getTime() - now.getTime();
 
@@ -44,21 +46,35 @@ export function shortenAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-// Calcular PnL (Profit and Loss)
+// Calcular PnL (Profit and Loss) con comisiones
 export function calculatePnL(
   entryPrice: number,
   currentPrice: number,
   amount: number,
   leverage: number,
-  isLong: boolean
-): { pnl: number; pnlPercentage: number } {
+  isLong: boolean,
+  marketPair?: string
+): { pnl: number; pnlPercentage: number; fees: number } {
   const priceChange = isLong
     ? currentPrice - entryPrice
     : entryPrice - currentPrice;
   const pnlPercentage = (priceChange / entryPrice) * 100 * leverage;
   const pnl = (amount * pnlPercentage) / 100;
 
-  return { pnl, pnlPercentage };
+  // Comisiones según el par: 0.1% WLD/USDT, 1% NUMA/WLD
+  const feeRate = marketPair === "WLD/USDT" ? 0.001 : 0.01;
+  const fees = amount * feeRate;
+
+  return { pnl, pnlPercentage, fees };
+}
+
+// Calcular comisión de apertura según el par
+export function calculateOpeningFee(
+  amount: number,
+  marketPair: string
+): number {
+  const feeRate = marketPair === "WLD/USDT" ? 0.001 : 0.01; // 0.1% WLD, 1% NUMA
+  return amount * feeRate;
 }
 
 // Conversión NUMA ↔ WLD

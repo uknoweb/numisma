@@ -33,7 +33,7 @@ import {
   calculateSwapWithFee,
   formatTimeRemaining,
 } from "@/lib/utils";
-import { PIONEER_CONFIG, MEMBERSHIP_PRICES } from "@/lib/types";
+import { PIONEER_CONFIG, MEMBERSHIP_PRICES, VIP_LOAN_CONFIG } from "@/lib/types";
 
 export default function Staking() {
   const setCurrentView = useAppStore((state) => state.setCurrentView);
@@ -42,7 +42,11 @@ export default function Staking() {
   const setLastClaim = useAppStore((state) => state.setLastClaim);
   const canClaim = useAppStore((state) => state.canClaim);
   const updateBalance = useAppStore((state) => state.updateBalance);
+  const updateMembership = useAppStore((state) => state.updateMembership);
   const pioneers = useAppStore((state) => state.pioneers);
+  const currentUserPioneer = useAppStore((state) => state.currentUserPioneer);
+  const setCurrentUserPioneer = useAppStore((state) => state.setCurrentUserPioneer);
+  const setPioneers = useAppStore((state) => state.setPioneers);
 
   const [showPioneerTutorial, setShowPioneerTutorial] = useState(false);
   const [swapAmount, setSwapAmount] = useState(100);
@@ -50,6 +54,9 @@ export default function Staking() {
   const [selectedMembership, setSelectedMembership] = useState<"plus" | "vip">(
     "plus"
   );
+  const [showPioneerDialog, setShowPioneerDialog] = useState(false);
+  const [pioneerAmount, setPioneerAmount] = useState(50);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   if (!user) return null;
 
@@ -76,7 +83,14 @@ export default function Staking() {
   };
 
   const handleSwap = () => {
-    if (swapAmount > user.balanceNuma) return;
+    if (swapAmount <= 0) {
+      alert('Ingresa una cantidad válida');
+      return;
+    }
+    if (swapAmount > user.balanceNuma) {
+      alert('No tienes suficiente NUMA');
+      return;
+    }
     updateBalance(user.balanceNuma - swapAmount, user.balanceWld + wldReceived);
     setSwapAmount(100);
   };
@@ -86,13 +100,87 @@ export default function Staking() {
       selectedMembership === "plus"
         ? MEMBERSHIP_PRICES.plus
         : MEMBERSHIP_PRICES.vip;
-    if (user.balanceWld < price) return;
+    
+    const duration = selectedMembership === "plus" ? 30 : 90; // Plus: 1 mes, VIP: 3 meses
+    
+    if (user.balanceWld < price) {
+      alert(`❌ Balance insuficiente. Necesitas ${price} WLD`);
+      return;
+    }
 
-    // Actualizar membresía (mock)
+    // Descontar del balance y activar membresía
+    updateBalance(user.balanceNuma, user.balanceWld - price);
+    updateMembership(selectedMembership, duration);
     setShowMembershipDialog(false);
-    alert(
-      `Membresía ${selectedMembership.toUpperCase()} activada. (Integración pendiente)`
-    );
+    
+    const message = selectedMembership === "vip"
+      ? `✅ Membresía VIP activada por 3 meses!\n\n` +
+        `💡 Después del 6to mes podrás pagar mensualmente (15 WLD/mes)\n` +
+        `🎁 Al año de membresía: Acceso a préstamo de 60 WLD con tasa preferencial`
+      : `✅ Membresía PLUS activada por 1 mes!`;
+    
+    alert(message);
+  };
+
+  // Validar y confirmar para convertirse en Pionero
+  const handleConfirmPioneer = () => {
+    if (!acceptedTerms) {
+      alert('❌ Debes aceptar los términos y condiciones');
+      return;
+    }
+
+    if (pioneerAmount < 50) {
+      alert('❌ El mínimo es 50 WLD');
+      return;
+    }
+
+    if (pioneerAmount > user.balanceWld) {
+      alert(`❌ Balance insuficiente. Tienes ${user.balanceWld.toFixed(2)} WLD`);
+      return;
+    }
+
+    // Crear 100 pioneros ficticios con capital variado
+    const mockPioneers = [];
+    for (let i = 1; i <= 100; i++) {
+      mockPioneers.push({
+        id: `pioneer_${i}`,
+        userId: i === 1 ? user.id : `user_${i}`,
+        walletAddress: `0x${Math.random().toString(16).substring(2, 42)}`,
+        capitalLocked: i === 1 ? pioneerAmount : Math.random() * 200 + 50,
+        lockedUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        earningsAccumulated: 0,
+        hasActiveLoan: false,
+        rank: 0,
+        joinedAt: new Date(),
+        nextPaymentDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      });
+    }
+
+    mockPioneers.sort((a, b) => b.capitalLocked - a.capitalLocked);
+    mockPioneers.forEach((p, idx) => { p.rank = idx + 1; });
+
+    const userPioneer = mockPioneers.find(p => p.userId === user.id);
+    
+    if (userPioneer) {
+      setPioneers(mockPioneers);
+      setCurrentUserPioneer(userPioneer);
+      updateBalance(user.balanceNuma, user.balanceWld - pioneerAmount);
+      
+      setShowPioneerDialog(false);
+      setAcceptedTerms(false);
+      setPioneerAmount(50);
+      
+      alert(
+        `✅ ¡Bienvenido al Club de Pioneros!\n\n` +
+        `Ranking: #${userPioneer.rank} de 100\n` +
+        `Capital Bloqueado: ${pioneerAmount} WLD\n` +
+        `Duración: 1 año\n\n` +
+        `${userPioneer.rank <= 100 
+          ? '🏆 ACCESO A CRÉDITOS ACTIVADO\n5% de ganancias totales cada 15 días' 
+          : '⏳ Aumenta tu capital para acceder a Créditos (Top 100)'
+        }`
+      );
+    }
   };
 
   return (
@@ -235,7 +323,7 @@ export default function Staking() {
           </CardHeader>
           <CardContent className="grid md:grid-cols-3 gap-4">
             {/* Free */}
-            <div className="bg-[--color-gray-800] rounded-lg p-4 border-2 border-gray-700">
+            <div className={`bg-[--color-gray-800] rounded-lg p-4 border-2 ${user.membership.tier === 'free' ? 'border-gray-500' : 'border-gray-700'}`}>
               <div className="text-center space-y-3">
                 <div className="text-lg font-semibold text-gray-400">Gratis</div>
                 <div className="text-3xl font-bold text-white">$0</div>
@@ -244,13 +332,23 @@ export default function Staking() {
                   <div className="text-gray-300">Apalancamiento x2-x10</div>
                 </div>
                 <Button disabled variant="ghost" className="w-full">
-                  Actual
+                  {user.membership.tier === 'free' ? 'Actual' : 'Gratis'}
                 </Button>
               </div>
             </div>
 
             {/* Plus */}
-            <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/20 rounded-lg p-4 border-2 border-blue-500">
+            <button
+              onClick={() => {
+                setSelectedMembership("plus");
+                setShowMembershipDialog(true);
+              }}
+              className={`bg-gradient-to-br from-blue-900/20 to-blue-800/20 rounded-lg p-4 border-2 transition-all ${
+                selectedMembership === 'plus' 
+                  ? 'border-blue-400 shadow-lg shadow-blue-500/20 scale-[1.02]' 
+                  : 'border-blue-500 hover:border-blue-400'
+              } ${user.membership.tier === 'plus' ? 'ring-2 ring-blue-400' : ''}`}
+            >
               <div className="text-center space-y-3">
                 <div className="text-lg font-semibold text-blue-400">Plus</div>
                 <div className="text-3xl font-bold text-white">
@@ -260,46 +358,49 @@ export default function Staking() {
                   <div className="text-gray-300">200 → 100 NUMA/día</div>
                   <div className="text-gray-300">Apalancamiento x2-x30</div>
                 </div>
-                <Button
-                  onClick={() => {
-                    setSelectedMembership("plus");
-                    setShowMembershipDialog(true);
-                  }}
-                  variant="outline"
-                  className="w-full border-blue-500 text-blue-400 hover:bg-blue-500/20"
-                >
-                  Comprar
-                </Button>
+                <div className="w-full h-10 rounded-md bg-blue-500 text-white font-semibold flex items-center justify-center">
+                  {user.membership.tier === 'plus' ? '✓ Activa' : 'Seleccionar'}
+                </div>
               </div>
-            </div>
+            </button>
 
             {/* VIP */}
-            <div className="bg-gradient-to-br from-[--color-gold]/20 to-[--color-gold-dark]/20 rounded-lg p-4 border-2 border-[--color-gold]">
+            <button
+              onClick={() => {
+                setSelectedMembership("vip");
+                setShowMembershipDialog(true);
+              }}
+              className={`bg-gradient-to-br from-[#FFD700]/20 to-[#D4AF37]/20 rounded-lg p-4 border-2 transition-all ${
+                selectedMembership === 'vip' 
+                  ? 'border-[#FFD700] shadow-lg shadow-[#FFD700]/20 scale-[1.02]' 
+                  : 'border-[#FFD700]/50 hover:border-[#FFD700]'
+              } ${user.membership.tier === 'vip' ? 'ring-2 ring-[#FFD700]' : ''}`}
+            >
               <div className="text-center space-y-3">
-                <div className="text-lg font-semibold text-[--color-gold] flex items-center justify-center gap-1">
+                <div className="text-lg font-semibold text-[#FFD700] flex items-center justify-center gap-1">
                   <Crown className="w-4 h-4" />
                   VIP
                 </div>
                 <div className="text-3xl font-bold text-white">
-                  15 WLD<span className="text-sm text-gray-400">/6 meses</span>
+                  45 WLD<span className="text-sm text-gray-400">/3 meses</span>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="text-gray-300">500 → 250 NUMA/día</div>
-                  <div className="text-[--color-gold] font-semibold">
+                  <div className="text-[#FFD700] font-semibold">
                     Apalancamiento x2-x500
                   </div>
+                  <div className="text-xs text-blue-400 mt-2">
+                    💎 Pago mensual después del mes 6
+                  </div>
+                  <div className="text-xs text-green-400">
+                    🎁 Préstamo 60 WLD tras 1 año
+                  </div>
                 </div>
-                <Button
-                  onClick={() => {
-                    setSelectedMembership("vip");
-                    setShowMembershipDialog(true);
-                  }}
-                  className="w-full"
-                >
-                  Comprar
-                </Button>
+                <div className="btn-gold w-full h-10 flex items-center justify-center text-sm">
+                  {user.membership.tier === 'vip' ? '✓ Activa' : 'Seleccionar'}
+                </div>
               </div>
-            </div>
+            </button>
           </CardContent>
         </Card>
 
@@ -326,10 +427,49 @@ export default function Staking() {
               </Button>
             </div>
             <CardDescription>
-              Los 100 usuarios con mayor capital bloqueado ganan 5% de las ganancias
-              totales
+              Los 100 usuarios con mayor capital bloqueado ganan 5% de las ganancias totales + acceso a Créditos
             </CardDescription>
           </CardHeader>
+
+          {/* Estado del Usuario Pioneer */}
+          {currentUserPioneer && (
+            <CardContent className="border-t border-[--color-gray-700] pt-4 pb-4">
+              <div className={`rounded-lg p-4 ${currentUserPioneer.rank <= 100 ? 'bg-gradient-to-r from-[#FFD700]/10 to-[#D4AF37]/10 border border-[#FFD700]/30' : 'bg-[--color-gray-800] border border-gray-700'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-white flex items-center gap-2">
+                      {currentUserPioneer.rank <= 100 ? (
+                        <>
+                          <Trophy className="w-4 h-4 text-[#FFD700]" />
+                          🏆 Eres Pionero Elite
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="w-4 h-4 text-gray-500" />
+                          ⏳ En Lista de Espera
+                        </>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Ranking: #{currentUserPioneer.rank} • Capital: {formatNumber(currentUserPioneer.capitalLocked, 2)} WLD
+                    </div>
+                  </div>
+                  {currentUserPioneer.rank <= 100 && (
+                    <div className="text-right">
+                      <div className="text-xs text-[#FFD700] font-semibold">✅ CRÉDITOS ACTIVOS</div>
+                      <div className="text-xs text-gray-500">Puedes solicitar préstamos</div>
+                    </div>
+                  )}
+                  {currentUserPioneer.rank > 100 && (
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500 font-semibold">🔒 CRÉDITOS BLOQUEADOS</div>
+                      <div className="text-xs text-gray-600">Debes estar en Top 100</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          )}
 
           {showPioneerTutorial && (
             <CardContent className="space-y-4 border-t border-[--color-gray-700] pt-6">
@@ -489,6 +629,17 @@ export default function Staking() {
           )}
 
           <CardContent className="space-y-4">
+            {/* Botón para Convertirse en Pionero */}
+            {!currentUserPioneer && (
+              <button
+                onClick={() => setShowPioneerDialog(true)}
+                className="btn-gold w-full py-3 text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#FFD700]/20 hover:shadow-[#FFD700]/30 transition-all"
+              >
+                🏆 Convertirse en Pionero Elite
+                <span className="text-xs opacity-80">Mín. 50 WLD</span>
+              </button>
+            )}
+            
             {pioneers.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -552,20 +703,23 @@ export default function Staking() {
               Comprar Membresía {selectedMembership.toUpperCase()}
             </DialogTitle>
             <DialogDescription>
-              Confirma la compra de tu membresía premium
+              {selectedMembership === "vip" 
+                ? "Plan VIP con beneficios exclusivos y acceso a préstamos"
+                : "Confirma la compra de tu membresía premium"
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-[--color-gray-800] rounded-lg p-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-400">Precio</span>
+            <div className="bg-[--color-gray-800] rounded-lg p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Precio Inicial</span>
                 <span className="text-white font-semibold">
                   {selectedMembership === "plus"
                     ? `${MEMBERSHIP_PRICES.plus} WLD/mes`
-                    : `${MEMBERSHIP_PRICES.vip} WLD/6 meses`}
+                    : `${MEMBERSHIP_PRICES.vip} WLD (3 meses adelantados)`}
                 </span>
               </div>
-              <div className="flex justify-between mb-2">
+              <div className="flex justify-between">
                 <span className="text-gray-400">Recompensa Diaria</span>
                 <span className="text-[--color-gold] font-semibold">
                   {selectedMembership === "plus" ? "200 → 100" : "500 → 250"} NUMA
@@ -578,6 +732,39 @@ export default function Staking() {
                 </span>
               </div>
             </div>
+
+            {selectedMembership === "vip" && (
+              <div className="bg-gradient-to-br from-[#FFD700]/10 to-[#D4AF37]/5 border border-[#FFD700]/30 rounded-lg p-4 space-y-3">
+                <h4 className="font-bold text-[--color-gold] text-sm">🎁 Beneficios Exclusivos VIP</h4>
+                <div className="space-y-2 text-xs text-gray-300">
+                  <div className="flex items-start gap-2">
+                    <div className="text-[--color-gold] mt-0.5">•</div>
+                    <div>
+                      <strong className="text-white">Mes 1-3:</strong> Pago adelantado de 45 WLD
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="text-blue-400 mt-0.5">•</div>
+                    <div>
+                      <strong className="text-white">Después del mes 6:</strong> Opción de pago mensual (15 WLD/mes)
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="text-green-400 mt-0.5">•</div>
+                    <div>
+                      <strong className="text-white">Al cumplir 1 año:</strong> Acceso a préstamo de <strong className="text-green-400">60 WLD</strong> con tasa preferencial del 8%
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="text-amber-400 mt-0.5">•</div>
+                    <div>
+                      <strong className="text-white">Condiciones del préstamo:</strong> 30 días para pagar. Si no pagas, se congelará tu wallet hasta completar el pago total.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="text-sm text-gray-400">
               Balance disponible: {formatNumber(user.balanceWld, 2)} WLD
             </div>
@@ -592,8 +779,163 @@ export default function Staking() {
               className="w-full"
               size="lg"
             >
-              Confirmar Compra
+              Confirmar Compra {selectedMembership === "vip" ? `- ${MEMBERSHIP_PRICES.vip} WLD` : `- ${MEMBERSHIP_PRICES.plus} WLD`}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Confirmación para Convertirse en Pionero */}
+      <Dialog open={showPioneerDialog} onOpenChange={setShowPioneerDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-[--color-gold] flex items-center gap-2">
+              <Trophy className="w-6 h-6" />
+              Convertirse en Pionero Elite
+            </DialogTitle>
+            <DialogDescription>
+              Esta es una decisión ÚNICA e IRREVOCABLE. Lee cuidadosamente antes de continuar.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Advertencia Crítica */}
+            <div className="bg-red-900/20 border-2 border-red-500/50 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⚠️</div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-red-400 mb-2">DECISIÓN ÚNICA EN LA VIDA</h4>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    Solo puedes convertirte en Pionero <strong className="text-red-400">UNA VEZ</strong>. 
+                    El capital quedará bloqueado por <strong className="text-red-400">1 AÑO COMPLETO</strong>. 
+                    Asegúrate de estar 100% seguro de la cantidad que vas a comprometer.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Input de cantidad */}
+            <div className="bg-[--color-gray-800] rounded-lg p-4 space-y-3">
+              <label className="text-sm font-semibold text-[--color-gold] block">
+                Cantidad a Bloquear (Mínimo: 50 WLD)
+              </label>
+              <input
+                type="number"
+                value={pioneerAmount}
+                onChange={(e) => setPioneerAmount(Number(e.target.value))}
+                min={50}
+                step={10}
+                aria-label="Cantidad a bloquear en WLD"
+                className="w-full bg-[--color-gray-900] border-2 border-[--color-gold]/30 rounded-lg px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-[--color-gold]"
+              />
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Disponible: {formatNumber(user.balanceWld, 2)} WLD</span>
+                <span className={pioneerAmount >= 50 ? "text-green-400" : "text-red-400"}>
+                  {pioneerAmount >= 50 ? "✓ Válido" : "✗ Mínimo 50 WLD"}
+                </span>
+              </div>
+            </div>
+
+            {/* Beneficios Garantizados */}
+            <div className="bg-gradient-to-br from-[--color-gold]/10 to-[--color-gold]/5 border border-[--color-gold]/30 rounded-lg p-4">
+              <h4 className="font-bold text-[--color-gold] mb-3 flex items-center gap-2">
+                <Gift className="w-5 h-5" />
+                Beneficios como Pionero Elite
+              </h4>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-sm text-gray-300">
+                  <div className="text-[--color-gold]">✓</div>
+                  <div>
+                    <strong className="text-white">5% de ganancias totales</strong> de la plataforma distribuidas cada 15 días
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-gray-300">
+                  <div className="text-[--color-gold]">✓</div>
+                  <div>
+                    <strong className="text-white">Acceso a Créditos</strong> si estás en Top 100 (hasta 90% de tu capital)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-gray-300">
+                  <div className="text-[--color-gold]">✓</div>
+                  <div>
+                    <strong className="text-white">Prioridad en governance</strong> y decisiones de la plataforma
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-gray-300">
+                  <div className="text-[--color-gold]">✓</div>
+                  <div>
+                    <strong className="text-white">Badge exclusivo</strong> de Pionero en tu perfil
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Penalizaciones */}
+            <div className="bg-[--color-gray-800] rounded-lg p-4">
+              <h4 className="font-bold text-red-400 mb-3">⚠️ Penalizaciones por Retiro Anticipado</h4>
+              <div className="space-y-2 text-sm text-gray-300">
+                <div className="flex items-start gap-2">
+                  <div className="text-red-400">•</div>
+                  <div>
+                    <strong className="text-white">20% de penalización</strong> si retiras antes de 1 año
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="text-red-400">•</div>
+                  <div>
+                    Expulsión permanente del club de Pioneros
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="text-red-400">•</div>
+                  <div>
+                    Pérdida de acceso a Créditos y beneficios
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Checkbox de aceptación */}
+            <div className="bg-[--color-gray-900] border-2 border-[--color-gold]/50 rounded-lg p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 w-5 h-5 accent-[--color-gold]"
+                  aria-label="Aceptar términos pionero"
+                />
+                <span className="text-sm text-gray-200 leading-relaxed">
+                  <strong className="text-white">Confirmo que he leído y entendido</strong> todas las condiciones. 
+                  Acepto que mi capital de <strong className="text-[--color-gold]">{pioneerAmount} WLD</strong> quedará 
+                  bloqueado por 1 año completo. Entiendo que esta decisión es <strong className="text-red-400">única e irrevocable</strong>.
+                </span>
+              </label>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowPioneerDialog(false);
+                  setAcceptedTerms(false);
+                  setPioneerAmount(50);
+                }}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmPioneer}
+                disabled={!acceptedTerms || pioneerAmount < 50 || pioneerAmount > user.balanceWld}
+                className="flex-1 bg-[--color-gold] text-black hover:bg-[--color-gold]/90 font-bold"
+                size="lg"
+              >
+                Confirmar y Bloquear {pioneerAmount} WLD
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

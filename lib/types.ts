@@ -7,6 +7,9 @@ export interface Membership {
   expiresAt: Date | null;
   dailyRewards: number;
   maxLeverage: number;
+  vipLoanEligible?: boolean; // Elegible para préstamo VIP (después de 1 año)
+  vipLoanTaken?: boolean; // Si ya tomó un préstamo
+  lastLoanDate?: Date | null; // Última fecha de préstamo
 }
 
 // Usuario de la aplicación
@@ -93,7 +96,15 @@ export const LEVERAGE_CONFIG: LeverageConfig = {
 
 export const MEMBERSHIP_PRICES = {
   plus: 5, // WLD por mes
-  vip: 15, // WLD por 6 meses
+  vip: 45, // WLD por 3 meses adelantados (15 WLD/mes)
+};
+
+export const VIP_LOAN_CONFIG = {
+  eligibilityMonths: 12, // Elegible después de 1 año
+  maxLoanAmount: 60, // Máximo 60 WLD
+  interestRate: 8, // 8% tasa preferencial
+  repaymentGracePeriod: 30, // 30 días para pagar
+  cooldownPeriod: 90, // 90 días (3 meses) antes de poder pedir otro
 };
 
 export const PIONEER_CONFIG = {

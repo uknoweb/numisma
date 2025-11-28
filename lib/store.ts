@@ -15,6 +15,8 @@ interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
   updateBalance: (numa: number, wld: number) => void;
+  // Membresía
+  updateMembership: (tier: MembershipTier, duration: number) => void;
   
   // Verificación World ID
   isWorldIdVerified: boolean;
@@ -70,19 +72,65 @@ export const useAppStore = create<AppState>()(
       // Acciones de usuario
       setUser: (user) => set({ user }),
       
-      updateBalance: (numa, wld) =>
+      updateBalance: (numa: number, wld: number) =>
         set((state) => ({
           user: state.user
             ? { ...state.user, balanceNuma: numa, balanceWld: wld }
             : null,
         })),
       
+      updateMembership: (tier: MembershipTier, duration: number) =>
+        set((state) => {
+          if (!state.user) return state;
+          
+          const now = new Date();
+          const expiresAt = new Date(now.getTime() + duration * 24 * 60 * 60 * 1000);
+          
+          const dailyRewards = tier === "plus" ? 200 : tier === "vip" ? 500 : 50;
+          const maxLeverage = tier === "plus" ? 30 : tier === "vip" ? 500 : 10;
+          
+          return {
+            user: {
+              ...state.user,
+              membership: {
+                tier,
+                expiresAt,
+                dailyRewards,
+                maxLeverage,
+              },
+            },
+          };
+        }),
+      
       setWorldIdVerified: (verified) =>
         set({ isWorldIdVerified: verified, currentView: verified ? "dashboard" : "verify" }),
       
       // Acciones de posiciones
       addPosition: (position) =>
-        set((state) => ({ positions: [...state.positions, position] })),
+        set((state) => {
+          if (!state.user) return state;
+          
+          const collateral = position.amount / position.leverage;
+          const feeRate = position.symbol === "WLD/USDT" ? 0.001 : 0.01;
+          const openingFee = position.amount * feeRate;
+          
+          let newBalanceNuma = state.user.balanceNuma;
+          let newBalanceWld = state.user.balanceWld;
+          
+          if (position.symbol === "NUMA/WLD") {
+            // NUMA/WLD: Opera con NUMA, descontar NUMA + comisión en NUMA
+            newBalanceNuma = state.user.balanceNuma - position.amount - openingFee;
+          } else {
+            // WLD/USDT: Opera con WLD, descontar colateral + comisión en WLD
+            const totalDeduction = collateral + openingFee;
+            newBalanceWld = state.user.balanceWld - totalDeduction;
+          }
+          
+          return {
+            positions: [...state.positions, position],
+            user: { ...state.user, balanceNuma: newBalanceNuma, balanceWld: newBalanceWld },
+          };
+        }),
       
       updatePosition: (id, updates) =>
         set((state) => ({
@@ -92,13 +140,37 @@ export const useAppStore = create<AppState>()(
         })),
       
       closePosition: (id) =>
-        set((state) => ({
-          positions: state.positions.map((p) =>
-            p.id === id
-              ? { ...p, status: "closed" as const, closedAt: new Date() }
-              : p
-          ),
-        })),
+        set((state) => {
+          const position = state.positions.find((p) => p.id === id);
+          if (!position || !state.user) return state;
+          
+          const feeRate = position.symbol === "WLD/USDT" ? 0.001 : 0.01;
+          const closingFee = position.amount * feeRate;
+          const collateral = position.amount / position.leverage;
+          
+          let newBalanceNuma = state.user.balanceNuma;
+          let newBalanceWld = state.user.balanceWld;
+          
+          if (position.symbol === "NUMA/WLD") {
+            // NUMA/WLD: Devolver NUMA - comisión de cierre, PnL se suma en WLD
+            newBalanceNuma = state.user.balanceNuma + position.amount - closingFee;
+            // El PnL en NUMA/WLD se calcula en WLD (precio NUMA en WLD)
+            newBalanceWld = state.user.balanceWld + position.pnl;
+          } else {
+            // WLD/USDT: Devolver colateral + PnL - comisión, todo en WLD
+            const finalBalance = collateral + position.pnl - closingFee;
+            newBalanceWld = state.user.balanceWld + finalBalance;
+          }
+          
+          return {
+            positions: state.positions.map((p) =>
+              p.id === id
+                ? { ...p, status: "closed" as const, closedAt: new Date() }
+                : p
+            ),
+            user: { ...state.user, balanceNuma: newBalanceNuma, balanceWld: newBalanceWld },
+          };
+        }),
       
       // Acciones de pioneros
       setPioneers: (pioneers) => set({ pioneers }),

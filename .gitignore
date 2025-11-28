@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# hardhat
+/cache
+/artifacts
+/typechain-types
+/deployments
+/ignition/deployments
+
+# private keys (NEVER commit)
+*.key
+private_key.txt

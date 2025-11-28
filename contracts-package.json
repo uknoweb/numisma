@@ -1,0 +1,15 @@
+{
+  "name": "numisma-contracts",
+  "version": "1.0.0",
+  "description": "Smart Contracts for Numisma - Educational Trading Platform",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network worldchain-sepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network worldchain",
+    "verify:testnet": "hardhat verify --network worldchain-sepolia",
+    "verify:mainnet": "hardhat verify --network worldchain",
+    "coverage": "hardhat coverage",
+    "clean": "hardhat clean"
+  }
+}
