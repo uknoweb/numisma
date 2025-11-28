@@ -26,6 +26,8 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import {
   formatNumber,
@@ -57,6 +59,13 @@ export default function Staking() {
   const [showPioneerDialog, setShowPioneerDialog] = useState(false);
   const [pioneerAmount, setPioneerAmount] = useState(50);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  
+  // Estados para gestión de pioneros
+  const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [showClaimDialog, setShowClaimDialog] = useState(false);
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [depositAmount, setDepositAmount] = useState(50);
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
 
   if (!user) return null;
 
@@ -141,17 +150,16 @@ export default function Staking() {
 
     // Crear 100 pioneros ficticios con capital variado
     const mockPioneers = [];
+    const lockEndDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     for (let i = 1; i <= 100; i++) {
       mockPioneers.push({
-        id: `pioneer_${i}`,
         userId: i === 1 ? user.id : `user_${i}`,
         walletAddress: `0x${Math.random().toString(16).substring(2, 42)}`,
         capitalLocked: i === 1 ? pioneerAmount : Math.random() * 200 + 50,
-        lockedUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        lockedUntil: lockEndDate,
         earningsAccumulated: 0,
         hasActiveLoan: false,
         rank: 0,
-        joinedAt: new Date(),
         nextPaymentDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
       });
     }
@@ -179,6 +187,148 @@ export default function Staking() {
           ? '🏆 ACCESO A CRÉDITOS ACTIVADO\n5% de ganancias totales cada 15 días' 
           : '⏳ Aumenta tu capital para acceder a Créditos (Top 100)'
         }`
+      );
+    }
+  };
+
+  const handleDeposit = () => {
+    if (!currentUserPioneer) return;
+    
+    if (depositAmount < 10) {
+      alert('❌ El depósito mínimo es 10 WLD');
+      return;
+    }
+
+    if (depositAmount > user.balanceWld) {
+      alert(`❌ Balance insuficiente. Tienes ${user.balanceWld.toFixed(2)} WLD`);
+      return;
+    }
+
+    // Actualizar capital del pionero
+    const updatedPioneer = {
+      ...currentUserPioneer,
+      capitalLocked: currentUserPioneer.capitalLocked + depositAmount,
+    };
+
+    // Recalcular rankings
+    const updatedPioneers = pioneers.map(p => 
+      p.userId === user.id ? updatedPioneer : p
+    ).sort((a, b) => b.capitalLocked - a.capitalLocked);
+    
+    updatedPioneers.forEach((p, idx) => { p.rank = idx + 1; });
+
+    const newUserPioneer = updatedPioneers.find(p => p.userId === user.id);
+    
+    if (newUserPioneer) {
+      setPioneers(updatedPioneers);
+      setCurrentUserPioneer(newUserPioneer);
+      updateBalance(user.balanceNuma, user.balanceWld - depositAmount);
+      
+      setShowDepositDialog(false);
+      setDepositAmount(50);
+      
+      alert(
+        `✅ Depósito exitoso!\n\n` +
+        `Nuevo Capital: ${newUserPioneer.capitalLocked.toFixed(2)} WLD\n` +
+        `Nuevo Ranking: #${newUserPioneer.rank} de 100`
+      );
+    }
+  };
+
+  const handleClaimEarnings = () => {
+    if (!currentUserPioneer || currentUserPioneer.earningsAccumulated <= 0) return;
+
+    const earnings = currentUserPioneer.earningsAccumulated;
+    
+    // Actualizar pionero sin ganancias acumuladas
+    const updatedPioneer = {
+      ...currentUserPioneer,
+      earningsAccumulated: 0,
+    };
+
+    const updatedPioneers = pioneers.map(p => 
+      p.userId === user.id ? updatedPioneer : p
+    );
+
+    setPioneers(updatedPioneers);
+    setCurrentUserPioneer(updatedPioneer);
+    updateBalance(user.balanceNuma, user.balanceWld + earnings);
+    
+    setShowClaimDialog(false);
+    
+    alert(
+      `✅ Recompensa cobrada!\n\n` +
+      `Has recibido: ${earnings.toFixed(2)} WLD\n` +
+      `Nuevo balance: ${(user.balanceWld + earnings).toFixed(2)} WLD`
+    );
+  };
+
+  const handleWithdraw = () => {
+    if (!currentUserPioneer) return;
+    
+    const lockEndTime = new Date(currentUserPioneer.lockedUntil).getTime();
+    if (Date.now() < lockEndTime) {
+      alert('🔒 Tu capital aún está bloqueado por 1 año desde tu ingreso');
+      return;
+    }
+
+    if (withdrawAmount <= 0) {
+      alert('❌ Ingresa un monto válido para retirar');
+      return;
+    }
+
+    if (withdrawAmount > currentUserPioneer.capitalLocked) {
+      alert(`❌ Solo puedes retirar hasta ${currentUserPioneer.capitalLocked.toFixed(2)} WLD`);
+      return;
+    }
+
+    const newCapital = currentUserPioneer.capitalLocked - withdrawAmount;
+    
+    // Si retira todo, eliminarlo de pioneros
+    if (newCapital < 50) {
+      const updatedPioneers = pioneers.filter(p => p.userId !== user.id);
+      setPioneers(updatedPioneers);
+      setCurrentUserPioneer(null);
+      updateBalance(user.balanceNuma, user.balanceWld + currentUserPioneer.capitalLocked);
+      
+      setShowWithdrawDialog(false);
+      setWithdrawAmount(0);
+      
+      alert(
+        `✅ Retiro completo exitoso!\n\n` +
+        `Has retirado: ${currentUserPioneer.capitalLocked.toFixed(2)} WLD\n` +
+        `Ya no eres Pionero (capital mínimo 50 WLD)`
+      );
+      return;
+    }
+
+    // Retiro parcial
+    const updatedPioneer = {
+      ...currentUserPioneer,
+      capitalLocked: newCapital,
+    };
+
+    const updatedPioneers = pioneers.map(p => 
+      p.userId === user.id ? updatedPioneer : p
+    ).sort((a, b) => b.capitalLocked - a.capitalLocked);
+    
+    updatedPioneers.forEach((p, idx) => { p.rank = idx + 1; });
+
+    const newUserPioneer = updatedPioneers.find(p => p.userId === user.id);
+    
+    if (newUserPioneer) {
+      setPioneers(updatedPioneers);
+      setCurrentUserPioneer(newUserPioneer);
+      updateBalance(user.balanceNuma, user.balanceWld + withdrawAmount);
+      
+      setShowWithdrawDialog(false);
+      setWithdrawAmount(0);
+      
+      alert(
+        `✅ Retiro exitoso!\n\n` +
+        `Retirado: ${withdrawAmount.toFixed(2)} WLD\n` +
+        `Capital restante: ${newCapital.toFixed(2)} WLD\n` +
+        `Nuevo ranking: #${newUserPioneer.rank} de 100`
       );
     }
   };
@@ -650,6 +800,82 @@ export default function Staking() {
           )}
 
           <CardContent className="space-y-4">
+            {/* Panel de Control para Pionero Activo */}
+            {currentUserPioneer && (
+              <div className="bg-gradient-to-br from-[--color-gold]/10 to-transparent border border-[--color-gold]/30 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-[--color-gold] flex items-center gap-2">
+                      🏆 Tu Status Pionero
+                    </h3>
+                    <p className="text-xs text-gray-400">Gestiona tu inversión</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[--color-gold]">
+                      {formatNumber(currentUserPioneer.capitalLocked, 2)} WLD
+                    </div>
+                    <div className="text-xs text-gray-500">Capital Bloqueado</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[--color-gray-800] rounded-lg p-3">
+                    <div className="text-xs text-gray-400">Ganancias Acumuladas</div>
+                    <div className="text-lg font-bold text-green-400">
+                      +{formatNumber(currentUserPioneer.earningsAccumulated, 2)} WLD
+                    </div>
+                  </div>
+                  <div className="bg-[--color-gray-800] rounded-lg p-3">
+                    <div className="text-xs text-gray-400">Próximo Pago</div>
+                    <div className="text-sm font-semibold text-white">
+                      {formatTimeRemaining(currentUserPioneer.nextPaymentDate)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botones de Acción */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setShowDepositDialog(true)}
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-lg text-xs font-bold hover:from-green-500 hover:to-green-600 transition-all active:scale-95 flex flex-col items-center gap-1"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Depositar
+                  </button>
+                  <button
+                    onClick={() => setShowClaimDialog(true)}
+                    disabled={currentUserPioneer.earningsAccumulated <= 0}
+                    className={`py-3 rounded-lg text-xs font-bold transition-all active:scale-95 flex flex-col items-center gap-1 ${
+                      currentUserPioneer.earningsAccumulated > 0
+                        ? "bg-gradient-to-r from-[--color-gold] to-[--color-gold-dark] text-black hover:shadow-lg"
+                        : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    <Gift className="w-4 h-4" />
+                    Cobrar
+                  </button>
+                  <button
+                    onClick={() => setShowWithdrawDialog(true)}
+                    disabled={Date.now() < new Date(currentUserPioneer.lockedUntil).getTime()}
+                    className={`py-3 rounded-lg text-xs font-bold transition-all active:scale-95 flex flex-col items-center gap-1 ${
+                      Date.now() >= new Date(currentUserPioneer.lockedUntil).getTime()
+                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600"
+                        : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    <TrendingDown className="w-4 h-4" />
+                    Retirar
+                  </button>
+                </div>
+
+                {Date.now() < new Date(currentUserPioneer.lockedUntil).getTime() && (
+                  <div className="text-xs text-center text-gray-500 bg-[--color-gray-800] rounded p-2">
+                    🔒 Retiro disponible en: {formatTimeRemaining(currentUserPioneer.lockedUntil)}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Botón para Convertirse en Pionero */}
             {!currentUserPioneer && (
               <button
@@ -959,6 +1185,254 @@ export default function Staking() {
                 Cancelar
               </button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Depositar */}
+      <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
+        <DialogContent className="bg-[--color-gray-900] border-[--color-gold]/30 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[--color-gold] text-xl flex items-center gap-2">
+              <TrendingUp className="w-6 h-6" />
+              Depositar más Capital
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Aumenta tu inversión para mejorar tu ranking y ganancias
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {currentUserPioneer && (
+              <div className="bg-[--color-gray-800] rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Capital actual</span>
+                  <span className="text-white font-semibold">{formatNumber(currentUserPioneer.capitalLocked, 2)} WLD</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Ranking actual</span>
+                  <span className="text-[--color-gold] font-semibold">#{currentUserPioneer.rank} de 100</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm text-gray-300 font-medium">Monto a depositar (mín. 10 WLD)</label>
+              <input
+                type="number"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(Number(e.target.value))}
+                min={10}
+                max={user.balanceWld}
+                step={10}
+                className="w-full bg-[--color-gray-800] text-white rounded-lg px-4 py-3 border border-[--color-gold]/30 focus:border-[--color-gold] focus:outline-none"
+              />
+              <div className="text-xs text-gray-500">
+                Balance disponible: {formatNumber(user.balanceWld, 2)} WLD
+              </div>
+            </div>
+
+            {depositAmount >= 10 && currentUserPioneer && (
+              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 space-y-1">
+                <div className="text-xs text-green-400 font-semibold">Vista previa:</div>
+                <div className="text-sm text-gray-300">
+                  Nuevo capital: <span className="text-white font-bold">{formatNumber(currentUserPioneer.capitalLocked + depositAmount, 2)} WLD</span>
+                </div>
+                <div className="text-xs text-gray-400">
+                  El ranking se recalculará automáticamente
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowDepositDialog(false);
+                  setDepositAmount(50);
+                }}
+                className="flex-1 py-3 rounded-lg border-2 border-[--color-gray-700] text-gray-400 hover:border-[--color-gray-600] transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeposit}
+                disabled={depositAmount < 10 || depositAmount > user.balanceWld}
+                className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+                  depositAmount >= 10 && depositAmount <= user.balanceWld
+                    ? "bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-500 hover:to-green-600"
+                    : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Depositar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Cobrar Ganancias */}
+      <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+        <DialogContent className="bg-[--color-gray-900] border-[--color-gold]/30 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[--color-gold] text-xl flex items-center gap-2">
+              <Gift className="w-6 h-6" />
+              Cobrar Ganancias
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Retira tus ganancias acumuladas como Pionero
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {currentUserPioneer && (
+              <>
+                <div className="bg-gradient-to-br from-[--color-gold]/20 to-transparent border border-[--color-gold]/30 rounded-lg p-6 text-center">
+                  <div className="text-sm text-gray-400 mb-2">Ganancias disponibles</div>
+                  <div className="text-4xl font-bold text-[--color-gold]">
+                    {formatNumber(currentUserPioneer.earningsAccumulated, 2)} WLD
+                  </div>
+                </div>
+
+                <div className="bg-[--color-gray-800] rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Capital bloqueado</span>
+                    <span className="text-white">{formatNumber(currentUserPioneer.capitalLocked, 2)} WLD</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Próximo pago en</span>
+                    <span className="text-white">{formatTimeRemaining(currentUserPioneer.nextPaymentDate)}</span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-center text-gray-500">
+                  💡 Las ganancias se calculan como el 5% de las ganancias totales de la plataforma cada 15 días
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClaimDialog(false)}
+                className="flex-1 py-3 rounded-lg border-2 border-[--color-gray-700] text-gray-400 hover:border-[--color-gray-600] transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleClaimEarnings}
+                disabled={!currentUserPioneer || currentUserPioneer.earningsAccumulated <= 0}
+                className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+                  currentUserPioneer && currentUserPioneer.earningsAccumulated > 0
+                    ? "bg-gradient-to-r from-[--color-gold] to-[--color-gold-dark] text-black hover:shadow-lg"
+                    : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Cobrar Ahora
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Retirar Capital */}
+      <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
+        <DialogContent className="bg-[--color-gray-900] border-[--color-gold]/30 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-400 text-xl flex items-center gap-2">
+              <TrendingDown className="w-6 h-6" />
+              Retirar Capital
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Retira tu capital después del periodo de bloqueo de 1 año
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {currentUserPioneer && (
+              <>
+                {Date.now() < new Date(currentUserPioneer.lockedUntil).getTime() ? (
+                  <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-center">
+                    <div className="text-red-400 font-semibold mb-2">🔒 Capital Bloqueado</div>
+                    <div className="text-sm text-gray-300">
+                      Podrás retirar en: <span className="text-white font-bold">{formatTimeRemaining(currentUserPioneer.lockedUntil)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-[--color-gray-800] rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Capital disponible</span>
+                        <span className="text-white font-semibold">{formatNumber(currentUserPioneer.capitalLocked, 2)} WLD</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Ranking actual</span>
+                        <span className="text-[--color-gold]">#{currentUserPioneer.rank} de 100</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-300 font-medium">Monto a retirar</label>
+                      <input
+                        type="number"
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(Number(e.target.value))}
+                        min={0}
+                        max={currentUserPioneer.capitalLocked}
+                        step={10}
+                        placeholder="0.00"
+                        className="w-full bg-[--color-gray-800] text-white rounded-lg px-4 py-3 border border-red-400/30 focus:border-red-400 focus:outline-none"
+                      />
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Máximo: {formatNumber(currentUserPioneer.capitalLocked, 2)} WLD</span>
+                        <button
+                          onClick={() => setWithdrawAmount(currentUserPioneer.capitalLocked)}
+                          className="text-[--color-gold] hover:underline"
+                        >
+                          Retirar todo
+                        </button>
+                      </div>
+                    </div>
+
+                    {withdrawAmount > 0 && (
+                      <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3 space-y-1">
+                        <div className="text-xs text-yellow-400 font-semibold">⚠️ Advertencia:</div>
+                        {currentUserPioneer.capitalLocked - withdrawAmount < 50 ? (
+                          <div className="text-sm text-gray-300">
+                            Al retirar este monto, <span className="text-red-400 font-bold">perderás tu estatus de Pionero</span> (capital mínimo 50 WLD)
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-300">
+                            Capital restante: <span className="text-white font-bold">{formatNumber(currentUserPioneer.capitalLocked - withdrawAmount, 2)} WLD</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowWithdrawDialog(false);
+                      setWithdrawAmount(0);
+                    }}
+                    className="flex-1 py-3 rounded-lg border-2 border-[--color-gray-700] text-gray-400 hover:border-[--color-gray-600] transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleWithdraw}
+                    disabled={Date.now() < new Date(currentUserPioneer.lockedUntil).getTime() || withdrawAmount <= 0 || withdrawAmount > currentUserPioneer.capitalLocked}
+                    className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+                      Date.now() >= new Date(currentUserPioneer.lockedUntil).getTime() && withdrawAmount > 0 && withdrawAmount <= currentUserPioneer.capitalLocked
+                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600"
+                        : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    Retirar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
