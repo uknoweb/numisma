@@ -32,7 +32,7 @@ export async function verifyWithWorldID(
     const { finalPayload } = await MiniKit.commandsAsync.verify({
       action: actionId,
       signal: signal || Date.now().toString(),
-      verification_level: 'orb', // Requerir verificación con Orb
+      verification_level: 'orb' as VerificationLevel, // Requerir verificación con Orb
     });
 
     if (!finalPayload || finalPayload.status === 'error') {
