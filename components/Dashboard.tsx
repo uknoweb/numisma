@@ -65,20 +65,20 @@ export default function Dashboard() {
     : "🔒 Créditos disponibles solo para Top 100 Pioneros";
 
   return (
-    <div className="min-h-screen bg-black pb-20">
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
+    <div className="min-h-screen bg-black pb-24">
+      <div className="max-w-2xl mx-auto p-5 sm:p-6 space-y-6">
         {/* Header con Logo */}
-        <div className="flex items-center justify-between pt-4 pb-2">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between pt-6 pb-4">
+          <div className="flex items-center gap-4">
             <Image 
               src="/numisma.png" 
               alt="Numisma Logo" 
-              width={48} 
-              height={48}
-              className="rounded-full"
+              width={56} 
+              height={56}
+              className="rounded-full shadow-lg"
             />
             <div>
-              <h1 className="text-2xl font-bold text-gold-gradient">
+              <h1 className="text-3xl font-black text-gold-gradient">
                 Numisma
               </h1>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -95,63 +95,63 @@ export default function Dashboard() {
         </div>
 
         {/* Balance Cards - Estilo DIAMANTE con glassmorphism */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-5 mb-8">
           {/* Balance NUMA */}
-          <div className="card-premium p-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-[#FFD700] opacity-5 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFD700] to-[#D4AF37] flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-black" />
+          <div className="card-premium p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD700] opacity-5 rounded-full blur-3xl"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FFD700] to-[#D4AF37] flex items-center justify-center shadow-lg">
+                <Wallet className="w-5 h-5 text-black" />
               </div>
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">NUMA</span>
+              <span className="text-sm text-gray-400 uppercase tracking-wider font-bold">NUMA</span>
             </div>
-            <div className="text-3xl font-bold text-[#FFD700] mb-1">
+            <div className="text-4xl font-black text-[#FFD700] mb-2">
               {formatNumber(user.balanceNuma, 0)}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-gray-500 font-medium">
               ≈ {formatNumber(user.balanceNuma * 0.001, 2)} WLD
             </div>
           </div>
 
           {/* Balance WLD */}
-          <div className="card-premium p-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full blur-2xl"></div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-gray-300 flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-black" />
+          <div className="card-premium p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full blur-3xl"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-300 flex items-center justify-center shadow-lg">
+                <Wallet className="w-5 h-5 text-black" />
               </div>
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">WLD</span>
+              <span className="text-sm text-gray-400 uppercase tracking-wider font-bold">WLD</span>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">
+            <div className="text-4xl font-black text-white mb-2">
               {formatNumber(user.balanceWld, 2)}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-gray-500 font-medium">
               💰 En vivo
             </div>
           </div>
         </div>
 
         {/* PnL Card Grande */}
-        <div className="card-premium p-6 mb-6 relative overflow-hidden">
-          <div className={`absolute top-0 right-0 w-32 h-32 ${
+        <div className="card-premium p-8 mb-8 relative overflow-hidden">
+          <div className={`absolute top-0 right-0 w-40 h-40 ${
             totalPnl >= 0 ? "bg-green-500" : "bg-red-500"
           } opacity-10 rounded-full blur-3xl`}></div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-full ${
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-full ${
                 totalPnl >= 0 ? "bg-green-500/20" : "bg-red-500/20"
-              } flex items-center justify-center`}>
-                <TrendingUp className={`w-5 h-5 ${
+              } flex items-center justify-center shadow-lg`}>
+                <TrendingUp className={`w-6 h-6 ${
                   totalPnl >= 0 ? "text-green-400" : "text-red-400"
                 }`} />
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Ganancias/Pérdidas</div>
-                <div className="text-xs text-gray-500">{openPositions.length} posiciones abiertas</div>
+                <div className="text-sm text-gray-400 uppercase tracking-wider font-bold">Ganancias/Pérdidas</div>
+                <div className="text-sm text-gray-500 font-medium">{openPositions.length} posiciones abiertas</div>
               </div>
             </div>
           </div>
-          <div className={`text-5xl font-black ${
+          <div className={`text-6xl font-black ${
             totalPnl >= 0 ? "text-green-400" : "text-red-400"
           }`}>
             {totalPnl >= 0 ? "+" : ""}{formatNumber(totalPnl, 2)} WLD
@@ -162,56 +162,56 @@ export default function Dashboard() {
         {positions.length > 0 && (
           <div className="card-premium p-4">
             <div className="text-xs text-gray-400 uppercase mb-3">📊 Estadísticas de Trading</div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-5 mt-4">
               <div>
-                <div className="text-[10px] text-gray-500">Total Trades</div>
-                <div className="text-base font-bold text-white">{positions.length}</div>
+                <div className="text-xs text-gray-500 font-medium mb-1">Total Trades</div>
+                <div className="text-lg font-black text-white">{positions.length}</div>
               </div>
               <div>
-                <div className="text-[10px] text-gray-500">Cerradas</div>
-                <div className="text-base font-bold text-blue-400">{closedPositions.length}</div>
+                <div className="text-xs text-gray-500 font-medium mb-1">Cerradas</div>
+                <div className="text-lg font-black text-blue-400">{closedPositions.length}</div>
               </div>
               <div>
-                <div className="text-[10px] text-gray-500">Comisiones</div>
-                <div className="text-base font-bold text-red-400">
+                <div className="text-xs text-gray-500 font-medium mb-1">Comisiones</div>
+                <div className="text-lg font-black text-red-400">
                   {formatNumber(totalFeesPaid, 4)} WLD
                 </div>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-gray-700">
-              <div className="flex items-center justify-between text-xs">
+            <div className="mt-5 pt-5 border-t border-gray-700">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">💡 Optimiza con WLD/USDT (0.1% fee)</span>
-                <span className="text-amber-400">vs NUMA/WLD (1% fee)</span>
+                <span className="text-amber-400 font-semibold">vs NUMA/WLD (1% fee)</span>
               </div>
             </div>
           </div>
         )}
 
         {/* Membership Info */}
-        <div className="card-premium p-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="card-premium p-6">
+          <div className="grid grid-cols-3 gap-6 text-center">
             <div>
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Award className="w-4 h-4 text-[#FFD700]" />
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Award className="w-5 h-5 text-[#FFD700]" />
               </div>
-              <div className="text-[10px] text-gray-600 uppercase">Plan</div>
-              <div className={`font-bold text-sm ${membershipColor}`}>
+              <div className="text-xs text-gray-600 uppercase font-bold">Plan</div>
+              <div className={`font-black text-base mt-1 ${membershipColor}`}>
                 {membershipLabel}
               </div>
             </div>
             <div>
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Clock className="w-4 h-4 text-[#FFD700]" />
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Clock className="w-5 h-5 text-[#FFD700]" />
               </div>
-              <div className="text-[10px] text-gray-600 uppercase">Tiempo</div>
-              <div className="font-bold text-sm text-white">{timeRemaining}</div>
+              <div className="text-xs text-gray-600 uppercase font-bold">Tiempo</div>
+              <div className="font-black text-base mt-1 text-white">{timeRemaining}</div>
             </div>
             <div>
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Coins className="w-4 h-4 text-[#FFD700]" />
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Coins className="w-5 h-5 text-[#FFD700]" />
               </div>
-              <div className="text-[10px] text-gray-600 uppercase">Diario</div>
-              <div className="font-bold text-sm text-white">
+              <div className="text-xs text-gray-600 uppercase font-bold">Diario</div>
+              <div className="font-black text-base mt-1 text-white">
                 {user.membership.dailyRewards}
               </div>
             </div>
@@ -220,21 +220,21 @@ export default function Dashboard() {
 
         {/* Info de Acceso a Créditos */}
         {currentUserPioneer && (
-          <div className={`card-premium p-4 ${isPioneerTop100 ? 'border border-[#FFD700]/30' : 'border border-gray-700'}`}>
+          <div className={`card-premium p-5 ${isPioneerTop100 ? 'border-2 border-[#FFD700]/30' : 'border-2 border-gray-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Wallet className={`w-5 h-5 ${isPioneerTop100 ? 'text-[#FFD700]' : 'text-gray-500'}`} />
+                <Wallet className={`w-6 h-6 ${isPioneerTop100 ? 'text-[#FFD700]' : 'text-gray-500'}`} />
                 <div>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-base font-black text-white">
                     {isPioneerTop100 ? '🏆 Pionero Elite' : '⏳ Pionero en Espera'}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-gray-500 font-medium">
                     Ranking: #{currentUserPioneer.rank} de {currentUserPioneer.rank <= 100 ? '100' : 'Total'}
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div className={`text-xs font-medium ${isPioneerTop100 ? 'text-[#FFD700]' : 'text-gray-500'}`}>
+                <div className={`text-sm font-bold ${isPioneerTop100 ? 'text-[#FFD700]' : 'text-gray-500'}`}>
                   {isPioneerTop100 ? 'Créditos Activos' : 'Créditos Bloqueados'}
                 </div>
               </div>

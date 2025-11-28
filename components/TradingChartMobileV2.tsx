@@ -32,9 +32,9 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
   const availableBalance = selectedPair === "NUMA/WLD" ? user?.balanceNuma || 0 : user?.balanceWld || 0;
   const balanceSymbol = selectedPair === "NUMA/WLD" ? "NUMA" : "WLD";
 
-  // Generar datos del gráfico
+  // Inicializar gráfico con datos históricos
   useEffect(() => {
-    const generateChartData = () => {
+    const initializeChart = () => {
       const data = [];
       const points = 40;
       
@@ -61,8 +61,32 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
       setChartData(data);
     };
 
-    generateChartData();
-    const interval = setInterval(generateChartData, 1000);
+    initializeChart();
+  }, [selectedPair]);
+
+  // Actualizar precio en tiempo real (solo agrega nuevos puntos)
+  useEffect(() => {
+    const updatePrice = () => {
+      setChartData(prev => {
+        const lastPrice = prev[prev.length - 1]?.price || (selectedPair === "NUMA/WLD" ? 0.001 : 2.5);
+        
+        let newPrice;
+        if (selectedPair === "NUMA/WLD") {
+          const volatility = (Math.random() * 0.0002 - 0.0001);
+          newPrice = Math.max(lastPrice + volatility, 0.0001);
+          setNumaPrice(newPrice);
+        } else {
+          const volatility = (Math.random() * 0.04 - 0.02);
+          newPrice = Math.max(lastPrice + volatility, 1);
+          setWldPrice(newPrice);
+        }
+        
+        const newData = [...prev.slice(-39), { time: `${Date.now()}`, price: newPrice }];
+        return newData;
+      });
+    };
+
+    const interval = setInterval(updatePrice, 1000);
     return () => clearInterval(interval);
   }, [selectedPair]);
 
@@ -149,148 +173,150 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
     : ((currentPrice - currentPrice * 0.99) / currentPrice) * amount * selectedLeverage;
 
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-[--color-gold]/20 bg-[--color-gray-900] flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-6 bg-[--color-gold] rounded"></div>
-          <h2 className="text-base font-bold text-[--color-gold]">{selectedPair}</h2>
-          <div className={`text-xs px-2 py-0.5 rounded ${
-            direction === "long" ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"
-          }`}>
-            {direction === "long" ? "LONG" : "SHORT"}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+      {/* Header Profesional */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-800/50 backdrop-blur-sm bg-black/50">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Selector de Par */}
+          <select
+            value={selectedPair}
+            onChange={(e) => setSelectedPair(e.target.value as MarketPair)}
+            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-[--color-gold]/30 rounded-xl px-4 py-2.5 text-sm sm:text-base font-semibold text-white shadow-lg hover:border-[--color-gold]/50 transition-all focus:outline-none focus:ring-2 focus:ring-[--color-gold]/50"
+            aria-label="Seleccionar par de trading"
+          >
+            <option value="NUMA/WLD">NUMA/WLD</option>
+            <option value="WLD/USDT">WLD/USDT</option>
+          </select>
+          
+          {/* Botón de posiciones */}
           <button
             onClick={() => setShowPositions(!showPositions)}
-            className="text-xs px-3 py-1.5 rounded bg-[--color-gray-800] text-[--color-gold] border border-[--color-gold]/30"
+            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-[--color-gold]/30 rounded-xl px-4 py-2.5 text-sm sm:text-base font-semibold text-white relative shadow-lg hover:border-[--color-gold]/50 transition-all"
             aria-label="Ver posiciones abiertas"
           >
-            Posiciones ({myPositionsFiltered.length})
+            <span className="hidden sm:inline">Posiciones</span>
+            <span className="sm:hidden">Pos.</span>
+            {myPositionsFiltered.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-gradient-to-br from-[--color-gold] to-yellow-600 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
+                {myPositionsFiltered.length}
+              </span>
+            )}
           </button>
-          <button 
-            onClick={onClose} 
-            className="text-white p-1.5 hover:bg-[--color-gray-800] rounded active:scale-95"
-            aria-label="Cerrar ventana de trading"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        </div>
+        
+        <button 
+          onClick={onClose} 
+          className="text-gray-400 hover:text-[--color-gold] transition-colors p-2 rounded-lg hover:bg-gray-800/50" 
+          aria-label="Cerrar ventana de trading"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Precio Actual */}
+      <div className="px-4 sm:px-6 py-5">
+        <div className="text-xs sm:text-sm text-gray-400 mb-2 font-medium">Precio Actual</div>
+        <div className="flex items-end gap-3">
+          <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+            {currentPrice.toFixed(selectedPair === "NUMA/WLD" ? 6 : 2)}
+          </div>
+          {chartData.length >= 2 && (
+            <div className={`text-lg sm:text-xl font-bold mb-1.5 flex items-center gap-1.5 ${chartData[chartData.length - 1]?.price > chartData[chartData.length - 2]?.price ? 'text-green-400' : 'text-red-400'}`}>
+              {chartData[chartData.length - 1]?.price > chartData[chartData.length - 2]?.price ? (
+                <TrendingUp className="w-5 h-5" />
+              ) : (
+                <TrendingDown className="w-5 h-5" />
+              )}
+              {Math.abs(((chartData[chartData.length - 1]?.price - chartData[chartData.length - 2]?.price) / chartData[chartData.length - 2]?.price * 100)).toFixed(2)}%
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Precio Actual Grande */}
-      <div className="bg-[--color-gray-900] px-4 py-2 border-b border-[--color-gold]/10 flex-shrink-0">
-        <div className="flex items-baseline gap-2">
-          <div className="text-3xl font-bold text-[--color-gold]">
-            {selectedPair === "NUMA/WLD" 
-              ? formatNumber(currentPrice, 6)
-              : formatNumber(currentPrice, 2)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {selectedPair === "NUMA/WLD" ? "WLD" : "USDT"}
-          </div>
-        </div>
-        <div className="flex items-center gap-3 mt-1">
-          <button
-            onClick={() => setSelectedPair("NUMA/WLD")}
-            className={`text-xs px-2 py-1 rounded ${
-              selectedPair === "NUMA/WLD"
-                ? "bg-[--color-gold] text-black font-bold"
-                : "bg-transparent text-gray-500"
-            }`}
-          >
-            NUMA/WLD
-          </button>
-          <button
-            onClick={() => setSelectedPair("WLD/USDT")}
-            className={`text-xs px-2 py-1 rounded ${
-              selectedPair === "WLD/USDT"
-                ? "bg-[--color-gold] text-black font-bold"
-                : "bg-transparent text-gray-500"
-            }`}
-          >
-            WLD/USDT
-          </button>
-        </div>
-      </div>
-
-      {/* Gráfico Compacto */}
-      <div className="h-[35vh] bg-black p-2 flex-shrink-0">
+      {/* Gráfico sin saltos */}
+      <div className="h-[38vh] px-3 sm:px-4 py-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <defs>
-              <linearGradient id="goldFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FFD700" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#FFD700" stopOpacity={0}/>
+              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFD700" stopOpacity={0.6} />
+                <stop offset="50%" stopColor="#D4AF37" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#FFD700" stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="time" hide />
-            <YAxis domain={["dataMin", "dataMax"]} hide />
+            <YAxis domain={['auto', 'auto']} hide />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#000",
-                border: "1px solid #FFD700",
-                borderRadius: "4px",
-                fontSize: "11px",
+                backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                border: '1px solid rgba(255, 215, 0, 0.5)',
+                borderRadius: '12px',
+                padding: '12px',
+                backdropFilter: 'blur(10px)',
               }}
+              labelStyle={{ color: '#FFD700', fontWeight: 'bold' }}
+              itemStyle={{ color: '#fff' }}
+              formatter={(value: number) => [`${value.toFixed(selectedPair === "NUMA/WLD" ? 6 : 2)}`, 'Precio']}
             />
-            <Line 
-              type="monotone" 
-              dataKey="price" 
-              stroke="#FFD700" 
-              strokeWidth={2} 
+            <Line
+              type="monotone"
+              dataKey="price"
+              stroke="#FFD700"
+              strokeWidth={3}
               dot={false}
-              fill="url(#goldFill)"
+              fill="url(#priceGradient)"
+              isAnimationActive={true}
+              animationDuration={800}
+              animationEasing="ease-in-out"
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Controles de Trading - Estilo MEXC */}
-      <div className="flex-1 overflow-y-auto bg-[--color-gray-900] p-3 space-y-3">
+      {/* Controles de Trading Profesionales */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
         
-        {/* Toggle Long/Short Grande estilo MEXC */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Botones Long/Short */}
+        <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => setDirection("long")}
-            className={`py-4 rounded-lg font-bold text-base transition-all ${
+            className={`py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
               direction === "long"
-                ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg"
-                : "bg-[--color-gray-800] text-gray-500 border border-gray-700"
+                ? "bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white shadow-xl shadow-green-500/50 border-2 border-green-400"
+                : "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-400 border-2 border-gray-700 hover:border-gray-600"
             }`}
           >
-            <TrendingUp className="w-5 h-5 inline mr-1" />
-            Comprar / Long
+            <TrendingUp className="w-6 h-6" />
+            LONG
           </button>
           <button
             onClick={() => setDirection("short")}
-            className={`py-4 rounded-lg font-bold text-base transition-all ${
+            className={`py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
               direction === "short"
-                ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
-                : "bg-[--color-gray-800] text-gray-500 border border-gray-700"
+                ? "bg-gradient-to-br from-red-500 via-red-600 to-red-700 text-white shadow-xl shadow-red-500/50 border-2 border-red-400"
+                : "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-400 border-2 border-gray-700 hover:border-gray-600"
             }`}
           >
-            <TrendingDown className="w-5 h-5 inline mr-1" />
-            Vender / Short
+            <TrendingDown className="w-6 h-6" />
+            SHORT
           </button>
         </div>
 
         {/* Apalancamiento */}
-        <div className="bg-[--color-gray-800] rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">Apalancamiento</span>
-            <span className="text-sm font-bold text-[--color-gold]">{selectedLeverage}x</span>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400 font-semibold">Apalancamiento</span>
+            <span className="text-lg font-black text-[--color-gold]">{selectedLeverage}x</span>
           </div>
-          <div className="flex gap-2">
-            {[2, 5, 10, 20, 50, 100, 125].map((lev) => (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {[2, 5, 10, 25, 50, 100, 125].map((lev) => (
               <button
                 key={lev}
                 onClick={() => setSelectedLeverage(lev)}
-                className={`flex-1 py-2 rounded text-xs font-bold transition-all ${
+                className={`px-5 py-2.5 rounded-xl font-black text-sm whitespace-nowrap transition-all active:scale-95 ${
                   selectedLeverage === lev
-                    ? "bg-[--color-gold] text-black"
-                    : "bg-[--color-gray-700] text-gray-400 hover:bg-[--color-gray-600]"
+                    ? "bg-gradient-to-br from-[--color-gold] via-yellow-500 to-[--color-gold] text-black shadow-lg shadow-[--color-gold]/50 border-2 border-yellow-300"
+                    : "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-400 border-2 border-gray-700 hover:border-gray-600"
                 }`}
               >
                 {lev}x
@@ -300,135 +326,121 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
         </div>
 
         {/* Monto */}
-        <div className="bg-[--color-gray-800] rounded-lg p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">Monto</span>
-            <span className="text-xs text-gray-500">
-              Balance: {formatNumber(availableBalance, 2)} {balanceSymbol}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400 font-semibold">Monto ({balanceSymbol})</span>
+            <span className="text-xs text-[--color-gold] font-medium">
+              Disponible: {formatNumber(availableBalance, 2)}
             </span>
           </div>
-          <div className="flex items-center gap-2 bg-[--color-gray-900] rounded-lg px-3 py-2">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-gray-700 rounded-2xl p-5 shadow-lg">
             <input
               type="number"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              min={0.10}
-              max={maxAmount}
-              step={0.10}
+              onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+              className="w-full bg-transparent text-white text-3xl font-black outline-none placeholder-gray-600"
+              step="0.01"
+              min="0.10"
               placeholder="0.10"
-              aria-label="Monto de la posición"
-              className="flex-1 bg-transparent text-white text-lg font-bold outline-none"
+              aria-label="Monto de la operación"
             />
-            <span className="text-sm text-gray-400">{balanceSymbol}</span>
-          </div>
-          <div className="flex gap-2">
-            {[25, 50, 75, 100].map((percent) => (
-              <button
-                key={percent}
-                onClick={() => setAmount((maxAmount * percent) / 100)}
-                className="flex-1 py-1.5 rounded text-xs bg-[--color-gray-700] text-gray-400 hover:text-white hover:bg-[--color-gray-600] transition-all"
-              >
-                {percent}%
-              </button>
-            ))}
+            <div className="grid grid-cols-4 gap-2 mt-4">
+              {[25, 50, 75, 100].map((percent) => (
+                <button
+                  key={percent}
+                  onClick={() => setAmount(availableBalance * (percent / 100))}
+                  className="py-2 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-xl text-sm font-bold text-gray-300 hover:border-[--color-gold]/50 hover:text-[--color-gold] transition-all active:scale-95"
+                >
+                  {percent}%
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Preview de la Operación */}
-        <div className="bg-gradient-to-br from-[--color-gold]/10 to-transparent border border-[--color-gold]/30 rounded-lg p-3 space-y-2">
-          <div className="text-xs text-gray-400 mb-1">📊 Preview de Operación</div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <div className="text-gray-500">Precio entrada</div>
-              <div className="text-white font-semibold">
-                {selectedPair === "NUMA/WLD" ? formatNumber(currentPrice, 6) : formatNumber(currentPrice, 2)}
-              </div>
-            </div>
-            <div>
-              <div className="text-gray-500">Comisión</div>
-              <div className="text-red-400 font-semibold">
-                {selectedPair === "WLD/USDT" ? "0.1%" : "1%"}
-              </div>
-            </div>
-            <div>
-              <div className="text-gray-500">Estimado +1%</div>
-              <div className="text-green-400 font-semibold">
-                +{formatNumber(estimatedPnL, 2)} {selectedPair === "NUMA/WLD" ? "WLD" : "USDT"}
-              </div>
-            </div>
-            <div>
-              <div className="text-gray-500">Monto total</div>
-              <div className="text-white font-semibold">
-                {formatNumber(amount * selectedLeverage, 2)}
-              </div>
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-[--color-gold]/20 rounded-2xl p-5 space-y-3 shadow-xl">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-400 font-medium">Precio de Entrada:</span>
+            <span className="text-base text-white font-bold">{currentPrice.toFixed(selectedPair === "NUMA/WLD" ? 6 : 2)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-400 font-medium">Comisión ({selectedPair === "WLD/USDT" ? "0.1" : "1"}%):</span>
+            <span className="text-base text-red-400 font-bold">
+              -{formatNumber(amount * (selectedPair === "WLD/USDT" ? 0.001 : 0.01), 4)} {balanceSymbol}
+            </span>
+          </div>
+          <div className="border-t border-gray-700 pt-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400 font-medium">P&L Estimado (1%):</span>
+              <span className="text-lg text-green-400 font-black">
+                +{formatNumber(amount * selectedLeverage * 0.01, 2)} {balanceSymbol}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Botón de Abrir Posición - Estilo MEXC */}
+        {/* Botón de apertura */}
         <button
           onClick={handleOpenPosition}
-          disabled={amount < 0.10 || amount > maxAmount}
-          className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
-            amount >= 0.10 && amount <= maxAmount
-              ? direction === "long"
-                ? "bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-500 hover:to-green-600 shadow-lg active:scale-[0.98]"
-                : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 shadow-lg active:scale-[0.98]"
-              : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+          className={`w-full py-6 rounded-2xl font-black text-2xl transition-all active:scale-95 border-2 shadow-2xl ${
+            direction === "long"
+              ? "bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white shadow-green-500/50 border-green-400 hover:shadow-green-500/70"
+              : "bg-gradient-to-br from-red-500 via-red-600 to-red-700 text-white shadow-red-500/50 border-red-400 hover:shadow-red-500/70"
           }`}
         >
-          {direction === "long" ? "🚀 Abrir Long" : "📉 Abrir Short"}
+          🚀 Abrir {direction.toUpperCase()} {selectedLeverage}x
         </button>
 
         {/* Posiciones Abiertas */}
         {showPositions && myPositionsFiltered.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs text-gray-400 uppercase">Tus Posiciones</div>
+          <div className="space-y-3 mt-6">
+            <div className="text-sm text-gray-400 uppercase font-bold">Tus Posiciones</div>
             {myPositionsFiltered.map((position) => (
               <div
                 key={position.id}
-                className="bg-[--color-gray-800] border border-[--color-gold]/20 rounded-lg p-3"
+                className="bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-[--color-gold]/20 rounded-2xl p-4 shadow-lg"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className={`text-xs px-2 py-0.5 rounded font-bold ${
+                    <div className={`text-sm px-3 py-1 rounded-xl font-black ${
                       position.type === "long" 
-                        ? "bg-green-600/20 text-green-400" 
-                        : "bg-red-600/20 text-red-400"
+                        ? "bg-green-600/30 text-green-400 border border-green-500/50" 
+                        : "bg-red-600/30 text-red-400 border border-red-500/50"
                     }`}>
                       {position.type.toUpperCase()} {position.leverage}x
                     </div>
-                    <div className="text-xs text-gray-400">{position.symbol}</div>
+                    <div className="text-sm text-gray-400 font-semibold">{position.symbol}</div>
                   </div>
-                  <div className={`text-sm font-bold ${
+                  <div className={`text-lg font-black ${
                     position.pnl >= 0 ? "text-green-400" : "text-red-400"
                   }`}>
                     {position.pnl >= 0 ? "+" : ""}{formatNumber(position.pnl, 2)}
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                <div className="grid grid-cols-3 gap-3 text-sm mb-4">
                   <div>
-                    <div className="text-gray-500">Entrada</div>
-                    <div className="text-white font-semibold">
+                    <div className="text-gray-500 font-medium mb-1">Entrada</div>
+                    <div className="text-white font-bold">
                       {formatNumber(position.entryPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">Actual</div>
-                    <div className="text-[--color-gold] font-semibold">
+                    <div className="text-gray-500 font-medium mb-1">Actual</div>
+                    <div className="text-[--color-gold] font-bold">
                       {formatNumber(position.currentPrice || currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">Monto</div>
-                    <div className="text-white font-semibold">
+                    <div className="text-gray-500 font-medium mb-1">Monto</div>
+                    <div className="text-white font-bold">
                       {formatNumber(position.amount, 2)}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleClosePosition(position.id)}
-                  className="w-full py-2 rounded bg-[--color-gold] text-black text-sm font-bold hover:bg-[--color-gold-dark] transition-all active:scale-[0.98]"
+                  className="w-full py-3 rounded-xl bg-[--color-gold] text-black text-base font-black hover:bg-yellow-500 transition-all active:scale-95 shadow-lg"
                 >
                   Cerrar Posición
                 </button>
@@ -438,11 +450,11 @@ export default function TradingChartMobileV2({ onClose }: TradingChartMobileV2Pr
         )}
 
         {/* Info Educativa */}
-        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-gray-300">
-              <strong className="text-blue-400">Modo educativo:</strong> Esta es una simulación para aprender trading de futuros. 
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-2 border-blue-500/30 rounded-2xl p-4 mt-6 shadow-lg">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-gray-300">
+              <strong className="text-blue-400 font-bold">Modo educativo:</strong> Esta es una simulación para aprender trading de futuros. 
               {direction === "long" ? " Long = apuestas a que el precio subirá." : " Short = apuestas a que el precio bajará."}
             </div>
           </div>
