@@ -704,8 +704,7 @@ export default function Staking() {
                 </p>
                 <ul className="text-xs text-gray-400 space-y-1 ml-4">
                   <li>
-                    • <strong className="text-white">Penalización:</strong> 20% va al
-                    Fondo de Respaldo del Creador
+                    • <strong className="text-white">Penalización:</strong> 20% se redistribuye entre pioneros activos
                   </li>
                   <li>
                     • <strong className="text-white">Retorno:</strong> 80% restante
@@ -792,7 +791,7 @@ export default function Staking() {
                     recuperar ese estatus
                   </li>
                   <li>
-                    • El colateral pasa al Fondo de Respaldo del creador
+                    • El colateral restante se redistribuye entre los pioneros activos
                   </li>
                 </ul>
               </div>

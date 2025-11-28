@@ -12,7 +12,8 @@ import {
   CandlestickChart,
 } from "lucide-react";
 import { useState } from "react";
-import TradingChartMobile from "./TradingChartMobile";
+import TradingChartMobileV2 from "./TradingChartMobileV2";
+import Image from "next/image";
 
 export default function Dashboard() {
   const user = useAppStore((state) => state.user);
@@ -66,16 +67,24 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-black pb-20">
       <div className="max-w-2xl mx-auto p-4 space-y-4">
-        {/* Header */}
+        {/* Header con Logo */}
         <div className="flex items-center justify-between pt-4 pb-2">
-          <div>
-            <h1 className="text-3xl font-bold text-gold-gradient flex items-center gap-2">
-              <Coins className="w-7 h-7 text-[#FFD700]" />
-              Numisma
-            </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Plataforma Educativa
-            </p>
+          <div className="flex items-center gap-3">
+            <Image 
+              src="/numisma.png" 
+              alt="Numisma Logo" 
+              width={48} 
+              height={48}
+              className="rounded-full"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-gold-gradient">
+                Numisma
+              </h1>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Plataforma Educativa de Trading
+              </p>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-[10px] text-gray-600 uppercase tracking-wide">Plan</div>
@@ -320,9 +329,9 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* Trading Chart Modal */}
+      {/* Trading Chart Modal - Nueva versión estilo MEXC */}
       {showTradingChart && (
-        <TradingChartMobile onClose={() => setShowTradingChart(false)} />
+        <TradingChartMobileV2 onClose={() => setShowTradingChart(false)} />
       )}
     </div>
   );
