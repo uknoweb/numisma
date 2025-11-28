@@ -146,77 +146,80 @@ export async function sendTransaction(params: {
 
 /**
  * Copiar al clipboard (útil para compartir referidos)
+ * NOTA: API no disponible en versión actual de MiniKit
  */
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await MiniKit.commandsAsync.copyToClipboard({
-      value: text,
-    });
-    return true;
-  } catch (error) {
-    console.error('Copy to clipboard error:', error);
-    return false;
-  }
-}
+// export async function copyToClipboard(text: string): Promise<boolean> {
+//   try {
+//     await MiniKit.commandsAsync.copyToClipboard({
+//       value: text,
+//     });
+//     return true;
+//   } catch (error) {
+//     console.error('Copy to clipboard error:', error);
+//     return false;
+//   }
+// }
 
 /**
  * Compartir contenido (para invitaciones de Pioneros)
+ * NOTA: Usar cuando se implemente sistema de referidos
  */
-export async function shareContent(params: {
-  title: string;
-  description: string;
-  url?: string;
-}): Promise<boolean> {
-  try {
-    await MiniKit.commandsAsync.share({
-      title: params.title,
-      description: params.description,
-      url: params.url,
-    });
-    return true;
-  } catch (error) {
-    console.error('Share error:', error);
-    return false;
-  }
-}
+// export async function shareContent(params: {
+//   title: string;
+//   description: string;
+//   url?: string;
+// }): Promise<boolean> {
+//   try {
+//     await MiniKit.commandsAsync.share({
+//       title: params.title,
+//       description: params.description,
+//       url: params.url,
+//     });
+//     return true;
+//   } catch (error) {
+//     console.error('Share error:', error);
+//     return false;
+//   }
+// }
 
 /**
  * Obtener información de pago (para compras de membresías)
+ * NOTA: Implementar cuando se active sistema de pagos real
  */
-export async function requestPayment(params: {
-  to: `0x${string}`;
-  value: string; // en WLD (ether)
-  description: string;
-}) {
-  try {
-    const { finalPayload } = await MiniKit.commandsAsync.pay({
-      reference: `payment_${Date.now()}`,
-      to: params.to,
-      tokens: [
-        {
-          symbol: 'WLD',
-          token_amount: params.value,
-        },
-      ],
-      description: params.description,
-    });
-
-    if (!finalPayload || finalPayload.status === 'error') {
-      return {
-        success: false,
-        error: 'Payment failed or was cancelled',
-      };
-    }
-
-    return {
-      success: true,
-      transactionId: finalPayload.transaction_id,
-    };
-  } catch (error) {
-    console.error('Payment error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
+// export async function requestPayment(params: {
+//   to: `0x${string}`;
+//   value: string; // en WLD (ether)
+//   description: string;
+// }) {
+//   try {
+//     const { finalPayload } = await MiniKit.commandsAsync.pay({
+//       reference: `payment_${Date.now()}`,
+//       to: params.to,
+//       tokens: [
+//         {
+//           symbol: 'WLD',
+//           token_amount: params.value,
+//         },
+//       ],
+//       description: params.description,
+//     });
+// 
+//     if (!finalPayload || finalPayload.status === 'error') {
+//       return {
+//         success: false,
+//         error: 'Payment failed or was cancelled',
+//       };
+//     }
+// 
+//     return {
+//       success: true,
+//       transactionId: finalPayload.transaction_id,
+//     };
+//   } catch (error) {
+//     console.error('Payment error:', error);
+//     return {
+//       success: false,
+//       error: error instanceof Error ? error.message : 'Unknown error',
+//     };
+//   }
+// }
