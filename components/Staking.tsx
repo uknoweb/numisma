@@ -233,15 +233,18 @@ export default function Staking() {
               </div>
             </div>
 
-            <Button
+            <button
               onClick={handleClaim}
               disabled={!canClaimReward}
-              size="lg"
-              className="w-full gap-2"
+              className={`w-full py-4 rounded-lg font-bold text-base flex items-center justify-center gap-2 transition-all ${
+                canClaimReward
+                  ? "bg-gradient-to-r from-[--color-gold] to-[--color-gold-dark] text-black shadow-lg active:scale-[0.98]"
+                  : "bg-[--color-gray-800] text-gray-500 cursor-not-allowed"
+              }`}
             >
               <Gift className="w-5 h-5" />
-              {canClaimReward ? "Reclamar Ahora" : "Ya Reclamado Hoy"}
-            </Button>
+              {canClaimReward ? "🎁 Reclamar Recompensa Ahora" : "✅ Ya Reclamado Hoy"}
+            </button>
 
             <div className="bg-[--color-gray-900] rounded-lg p-3 text-xs text-gray-400">
               <Info className="w-4 h-4 inline mr-1 text-[--color-gold]" />
@@ -258,6 +261,24 @@ export default function Staking() {
               Swap NUMA → WLD
             </CardTitle>
             <CardDescription>Convierte tus tokens con 3% de comisión</CardDescription>
+            
+            {swapAmount > 0 && (
+              <div className="mt-4 bg-[--color-gray-900] rounded-lg p-4 border border-[--color-gold]/20">
+                <div className="text-xs text-gray-400 mb-2">Preview del Swap:</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-400">Envías</div>
+                    <div className="text-lg font-bold text-white">{formatNumber(swapAmount, 0)} NUMA</div>
+                  </div>
+                  <ArrowLeftRight className="w-5 h-5 text-[--color-gold]" />
+                  <div className="text-right">
+                    <div className="text-sm text-gray-400">Recibes (aprox.)</div>
+                    <div className="text-lg font-bold text-[--color-gold]">{formatNumber(swapAmount * 0.001 * 0.97, 4)} WLD</div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 mt-2">Comisión 3%: {formatNumber(swapAmount * 0.001 * 0.03, 4)} WLD</div>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -914,27 +935,29 @@ export default function Staking() {
             </div>
 
             {/* Botones */}
-            <div className="flex gap-3">
-              <Button
+            <div className="flex flex-col gap-3 mt-6">
+              <button
+                onClick={handleConfirmPioneer}
+                disabled={!acceptedTerms || pioneerAmount < 50 || pioneerAmount > user.balanceWld}
+                className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
+                  acceptedTerms && pioneerAmount >= 50 && pioneerAmount <= user.balanceWld
+                    ? "bg-gradient-to-r from-[--color-gold] to-[--color-gold-dark] text-black shadow-lg active:scale-[0.98]"
+                    : "bg-[--color-gray-700] text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                ✅ Confirmar y Convertirme en Pionero
+              </button>
+              
+              <button
                 onClick={() => {
                   setShowPioneerDialog(false);
                   setAcceptedTerms(false);
                   setPioneerAmount(50);
                 }}
-                variant="outline"
-                className="flex-1"
-                size="lg"
+                className="w-full py-3 rounded-lg font-semibold text-base bg-transparent border-2 border-[--color-gray-700] text-gray-400 hover:border-[--color-gray-600] active:scale-[0.98] transition-all"
               >
                 Cancelar
-              </Button>
-              <Button
-                onClick={handleConfirmPioneer}
-                disabled={!acceptedTerms || pioneerAmount < 50 || pioneerAmount > user.balanceWld}
-                className="flex-1 bg-[--color-gold] text-black hover:bg-[--color-gold]/90 font-bold"
-                size="lg"
-              >
-                Confirmar y Bloquear {pioneerAmount} WLD
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>

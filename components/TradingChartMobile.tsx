@@ -140,22 +140,29 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
   if (!user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[--color-gold]/20 bg-[--color-gray-900]">
+      <div className="flex items-center justify-between p-4 border-b border-[--color-gold]/20 bg-[--color-gray-900] flex-shrink-0">
         <h2 className="text-lg font-bold text-[--color-gold]">📊 Trading</h2>
-        <Button onClick={onClose} variant="ghost" size="sm" className="text-white">
+        <button 
+          onClick={onClose} 
+          className="text-white p-2 hover:bg-[--color-gray-800] rounded-lg active:scale-95 transition-all"
+          aria-label="Cerrar"
+        >
           <X className="w-5 h-5" />
-        </Button>
+        </button>
       </div>
 
       {/* MITAD SUPERIOR: Gráfico (50vh) */}
-      <div className="h-[50vh] flex flex-col p-3 border-b border-[--color-gold]/20 bg-black">
+      <div className="h-[50vh] flex flex-col p-3 border-b border-[--color-gold]/20 bg-black flex-shrink-0">
         {/* Selector de Par */}
-        <div className="flex gap-2 mb-2">
+        <div className="flex gap-2 mb-2 relative z-10">
           <button
-            onClick={() => setSelectedPair("NUMA/WLD")}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => {
+              console.log("Cambiando a NUMA/WLD");
+              setSelectedPair("NUMA/WLD");
+            }}
+            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 ${
               selectedPair === "NUMA/WLD"
                 ? "bg-[--color-gold] text-black"
                 : "bg-[--color-gray-800] text-gray-400"
@@ -164,8 +171,11 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
             📊 NUMA/WLD
           </button>
           <button
-            onClick={() => setSelectedPair("WLD/USDT")}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => {
+              console.log("Cambiando a WLD/USDT");
+              setSelectedPair("WLD/USDT");
+            }}
+            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 ${
               selectedPair === "WLD/USDT"
                 ? "bg-[--color-gold] text-black"
                 : "bg-[--color-gray-800] text-gray-400"
@@ -176,7 +186,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
         </div>
 
         {/* Precio */}
-        <div className="bg-[--color-gray-900] rounded-lg p-2 mb-2">
+        <div className="bg-[--color-gray-900] rounded-lg p-2 mb-2 relative z-10">
           <div className="text-[10px] text-gray-400">{selectedPair}</div>
           <div className="text-xl font-bold text-[--color-gold]">
             {selectedPair === "NUMA/WLD" 
@@ -186,7 +196,7 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
         </div>
 
         {/* Gráfico */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 relative">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <XAxis dataKey="time" hide />
@@ -206,14 +216,17 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
       </div>
 
       {/* MITAD INFERIOR: Controles y Posiciones (50vh) */}
-      <div className="h-[50vh] overflow-y-auto bg-[--color-gray-900] p-3">
+      <div className="h-[50vh] overflow-y-auto bg-[--color-gray-900] p-3 flex-shrink-0">
         {/* Controles de Trading */}
         <div className="space-y-3 mb-4">
           {/* Dirección */}
           <div className="flex gap-2">
             <button
-              onClick={() => setDirection("long")}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold ${
+              onClick={() => {
+                console.log("Dirección LONG seleccionada");
+                setDirection("long");
+              }}
+              className={`flex-1 py-3 rounded-lg text-sm font-bold active:scale-95 transition-all ${
                 direction === "long"
                   ? "bg-green-600 text-white"
                   : "bg-[--color-gray-800] text-gray-400"
@@ -223,8 +236,11 @@ export default function TradingChartMobile({ onClose }: TradingChartMobileProps)
               LONG
             </button>
             <button
-              onClick={() => setDirection("short")}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold ${
+              onClick={() => {
+                console.log("Dirección SHORT seleccionada");
+                setDirection("short");
+              }}
+              className={`flex-1 py-3 rounded-lg text-sm font-bold active:scale-95 transition-all ${
                 direction === "short"
                   ? "bg-red-600 text-white"
                   : "bg-[--color-gray-800] text-gray-400"
