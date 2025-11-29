@@ -54,19 +54,66 @@
 ### **ESTADO DE LA APLICACIÓN:**
 ```
 ✅ Frontend: 100% funcional
-❌ Backend: 0% (pendiente)
-❌ Smart Contracts: 0% (no iniciado)
-❌ Base de Datos: 0% (no configurada)
+✅ Backend API: 60% (precios + oracle implementados, falta auth y trading completo)
+✅ Smart Contracts: 25% (PoolCentinelaRegeneracion deployed, faltan NUMA token y otros)
+❌ Base de Datos: 0% (no configurada - opcional)
 ❌ World ID Real: 20% (SDK integrado, falta verificación real)
+```
+
+### **NUEVO PROGRESO (29 Nov 2025):**
+```
+✅ PoolCentinelaRegeneracion.sol - Deployed en testnet
+✅ Backend API /api/prices/wld - Precio real CoinGecko
+✅ Backend API /api/oracle/update - Actualización automática
+✅ Wagmi + Viem - Frontend conectado a blockchain
+✅ Trading.tsx - Integración con smart contract
+✅ Custom Hooks - usePrices, usePoolContract
+⏳ Testing local listo - Servidor corriendo
+⏳ Deploy Vercel - Pendiente configurar env vars
 ```
 
 ---
 
 ## 📋 PRÓXIMOS PASOS PRIORITARIOS
 
-### **FASE 1: Backend y Base de Datos** (7-10 días)
+### **🔥 AHORA MISMO: Completar Sistema de Trading (2-3 días)**
 
-#### Tarea 1: Configurar Vercel Postgres
+El PoolCentinelaRegeneracion ya está deployed, pero necesitamos:
+
+#### ✅ Ya Tenemos:
+- Smart contract con dual pairs (WLD/USDT, NUMA/WLD)
+- Frontend conectado a blockchain
+- Precio real de WLD desde CoinGecko
+- Oracle automático cada 5 minutos
+
+#### ⏳ Falta Completar:
+
+**1. Tokens NUMA y WLD en el Contrato** (Prioridad ALTA)
+- Actualmente el contrato usa balances internos
+- Necesitamos deployar NumismaToken.sol (ERC-20)
+- Necesitamos obtener WLD token address (ya existe en World Chain)
+- Modificar PoolCentinelaRegeneracion para usar tokens reales
+
+**2. Liquidez Inicial del Pool**
+- Fondear pool con WLD/NUMA para poder pagar ganancias
+- Definir cantidades iniciales de liquidez
+- Implementar función de depósito de liquidez
+
+**3. Verificación World ID Real**
+- Actualmente es simulada en frontend
+- Implementar verificación real on-chain
+- Agregar restricción: 1 cuenta por persona (via World ID)
+
+**4. Sistema de Membresías**
+- Implementar compra de Plus (5 WLD) y VIP (15 WLD)
+- Apalancamiento por tier: Free (5x), Plus (50x), VIP (500x)
+- Guardar membership en smart contract
+
+---
+
+### **FASE 1: Tokens y Liquidez** (3-5 días)
+
+#### Tarea 1: Deploy NUMA Token
 ```bash
 # En Vercel Dashboard
 1. Storage → Create Database → Postgres

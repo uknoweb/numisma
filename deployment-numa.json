@@ -1,0 +1,18 @@
+{
+  "network": "worldchain-sepolia",
+  "contractAddress": "0xa57917BC4568B9e392869AbAc504fEe746e7bede",
+  "deployer": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "totalSupply": "1000000000000000000000000000",
+  "name": "Numisma",
+  "symbol": "NUMA",
+  "decimals": 18,
+  "deployedAt": "2025-11-29T17:12:41.359Z",
+  "blockNumber": 21944468,
+  "allocation": {
+    "tradingPool": "400000000000000000000000000",
+    "stakingRewards": "300000000000000000000000000",
+    "pioneerVault": "100000000000000000000000000",
+    "teamVesting": "100000000000000000000000000",
+    "treasury": "100000000000000000000000000"
+  }
+}
