@@ -116,6 +116,15 @@ export default function Trading() {
   const feeRate = selectedPair === "WLD/USDT" ? 0.001 : 0.01; // 0.1% WLD, 1% NUMA
   const openingFee = amountNum * feeRate;
   const estimatedPnL1Percent = amountNum * leverage * 0.01;
+  
+  const myPositions = positions.filter(
+    p => p.status === "open" && p.symbol === selectedPair
+  );
+
+  // Calcular rango de la gráfica con validaciones seguras
+  const maxPrice = priceHistory.length > 0 ? Math.max(...priceHistory) : currentPrice * 1.01;
+  const minPrice = priceHistory.length > 0 ? Math.min(...priceHistory) : currentPrice * 0.99;
+  const priceRange = maxPrice - minPrice || 0.01;
 
   const handleOpenPosition = () => {
     if (amountNum < 0.1) {
@@ -174,15 +183,6 @@ export default function Trading() {
     closePosition(positionId);
     alert(`✅ Posición cerrada\nP&L: ${finalPnL >= 0 ? "+" : ""}${formatNumber(finalPnL, 2)} ${position.symbol === "WLD/USDT" ? "WLD" : "NUMA"}`);
   };
-
-  const myPositions = positions.filter(
-    p => p.status === "open" && p.symbol === selectedPair
-  );
-
-  // Calcular rango de la gráfica
-  const maxPrice = Math.max(...priceHistory);
-  const minPrice = Math.min(...priceHistory);
-  const priceRange = maxPrice - minPrice || 0.01;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -250,112 +250,135 @@ export default function Trading() {
 
           {/* Gráfica simple con líneas */}
           <div className="h-64 bg-gray-50 rounded-xl overflow-hidden relative">
-            <svg 
-              viewBox="0 0 600 250" 
-              className="w-full h-full block"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {/* Grid de fondo */}
-              <defs>
-                <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-                  <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="600" height="250" fill="url(#grid)" />
+            {(() => {
+              // Verificar datos básicos
+              const hasData = priceHistory && priceHistory.length >= 2;
+              const hasValidPrices = !isNaN(currentPrice) && currentPrice > 0;
               
-              {/* Línea horizontal central */}
-              <line x1="40" y1="125" x2="560" y2="125" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="5,5" />
-              
-              {/* Línea de precio */}
-              {(() => {
-                if (priceHistory.length < 2) {
-                  return (
-                    <text x="300" y="125" textAnchor="middle" fill="#9ca3af" fontSize="14" fontWeight="500">
-                      Cargando datos...
-                    </text>
-                  );
-                }
-
-                const padding = 40;
-                const chartWidth = 560 - padding;
-                const chartHeight = 250 - 40;
-                const topPadding = 20;
-
-                // Normalizar valores para evitar divisiones por cero
-                const safeMaxPrice = maxPrice || currentPrice * 1.01;
-                const safeMinPrice = minPrice || currentPrice * 0.99;
-                const safePriceRange = Math.max(safeMaxPrice - safeMinPrice, currentPrice * 0.02);
-
-                const pathData = priceHistory
-                  .map((price, i) => {
-                    const x = padding + (i / (priceHistory.length - 1)) * chartWidth;
-                    const normalizedY = ((safeMaxPrice - price) / safePriceRange);
-                    const y = topPadding + (normalizedY * chartHeight);
-                    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-                  })
-                  .join(' ');
-
+              if (!hasData || !hasValidPrices) {
                 return (
-                  <>
-                    {/* Línea de precio principal */}
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    
-                    {/* Marcadores de posiciones */}
-                    {myPositions.map((pos) => {
-                      const normalizedY = ((safeMaxPrice - pos.entryPrice) / safePriceRange);
-                      const entryY = topPadding + (normalizedY * chartHeight);
-                      const posColor = pos.type === "long" ? "#22c55e" : "#ef4444";
-                      
-                      return (
-                        <g key={pos.id}>
-                          <line
-                            x1={padding}
-                            y1={entryY}
-                            x2={560}
-                            y2={entryY}
-                            stroke={posColor}
-                            strokeWidth="1.5"
-                            strokeDasharray="6,3"
-                            opacity="0.6"
-                          />
-                          <circle
-                            cx={540}
-                            cy={entryY}
-                            r="4"
-                            fill={posColor}
-                          />
-                          <text
-                            x={535}
-                            y={entryY - 8}
-                            textAnchor="end"
-                            fill={posColor}
-                            fontSize="11"
-                            fontWeight="600"
-                          >
-                            {pos.type.toUpperCase()}
-                          </text>
-                        </g>
-                      );
-                    })}
-
-                    {/* Etiquetas de precio */}
-                    <text x="10" y="25" fill="#6b7280" fontSize="11" fontWeight="500">
-                      {formatNumber(safeMaxPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
-                    </text>
-                    <text x="10" y="245" fill="#6b7280" fontSize="11" fontWeight="500">
-                      {formatNumber(safeMinPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
-                    </text>
-                  </>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-gray-400 text-sm font-medium">Inicializando gráfico...</div>
+                      <div className="text-gray-300 text-xs mt-1">
+                        Datos: {priceHistory?.length || 0} | Precio: {currentPrice || 0}
+                      </div>
+                    </div>
+                  </div>
                 );
-              })()}
-            </svg>
+              }
+
+              return (
+                <svg 
+                  viewBox="0 0 600 250" 
+                  className="w-full h-full block"
+                  preserveAspectRatio="xMidYMid meet"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Grid de fondo */}
+                  <defs>
+                    <pattern id="grid-pattern" width="50" height="50" patternUnits="userSpaceOnUse">
+                      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="600" height="250" fill="url(#grid-pattern)" />
+                  
+                  {/* Línea horizontal central */}
+                  <line x1="40" y1="125" x2="560" y2="125" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="5,5" />
+                  
+                  {/* Línea de precio */}
+                  {(() => {
+                    try {
+                      const padding = 40;
+                      const chartWidth = 520;
+                      const chartHeight = 210;
+                      const topPadding = 20;
+
+                      // Normalizar valores para evitar divisiones por cero
+                      const safeMaxPrice = maxPrice > 0 ? maxPrice : currentPrice * 1.01;
+                      const safeMinPrice = minPrice > 0 ? minPrice : currentPrice * 0.99;
+                      const safePriceRange = Math.max(safeMaxPrice - safeMinPrice, currentPrice * 0.02);
+
+                      const pathData = priceHistory
+                        .map((price, i) => {
+                          const x = padding + (i / (priceHistory.length - 1)) * chartWidth;
+                          const normalizedY = ((safeMaxPrice - price) / safePriceRange);
+                          const y = topPadding + (normalizedY * chartHeight);
+                          return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
+                        })
+                        .join(' ');
+
+                      return (
+                        <>
+                          {/* Línea de precio principal */}
+                          <path
+                            d={pathData}
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          
+                          {/* Marcadores de posiciones */}
+                          {myPositions.map((pos) => {
+                            const normalizedY = ((safeMaxPrice - pos.entryPrice) / safePriceRange);
+                            const entryY = topPadding + (normalizedY * chartHeight);
+                            const posColor = pos.type === "long" ? "#22c55e" : "#ef4444";
+                            
+                            return (
+                              <g key={pos.id}>
+                                <line
+                                  x1={padding}
+                                  y1={entryY}
+                                  x2={560}
+                                  y2={entryY}
+                                  stroke={posColor}
+                                  strokeWidth="1.5"
+                                  strokeDasharray="6,3"
+                                  opacity="0.6"
+                                />
+                                <circle
+                                  cx={540}
+                                  cy={entryY}
+                                  r="4"
+                                  fill={posColor}
+                                />
+                                <text
+                                  x={535}
+                                  y={entryY - 8}
+                                  textAnchor="end"
+                                  fill={posColor}
+                                  fontSize="11"
+                                  fontWeight="600"
+                                >
+                                  {pos.type.toUpperCase()}
+                                </text>
+                              </g>
+                            );
+                          })}
+
+                          {/* Etiquetas de precio */}
+                          <text x="10" y="25" fill="#6b7280" fontSize="11" fontWeight="500">
+                            {formatNumber(safeMaxPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                          </text>
+                          <text x="10" y="245" fill="#6b7280" fontSize="11" fontWeight="500">
+                            {formatNumber(safeMinPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                          </text>
+                        </>
+                      );
+                    } catch (error) {
+                      console.error('Error rendering chart:', error);
+                      return (
+                        <text x="300" y="125" textAnchor="middle" fill="#ef4444" fontSize="12" fontWeight="500">
+                          Error al renderizar gráfico
+                        </text>
+                      );
+                    }
+                  })()}
+                </svg>
+              );
+            })()}
           </div>
 
           <div className="mt-4 bg-gray-50 rounded-lg p-3">
