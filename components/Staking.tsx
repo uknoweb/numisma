@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore, getCurrentDailyReward } from "@/lib/store";
 import {
   ArrowLeft,
@@ -31,6 +31,7 @@ export default function Staking() {
   const setPioneers = useAppStore((state) => state.setPioneers);
 
   const [swapAmount, setSwapAmount] = useState("100");
+  const [swapDirection, setSwapDirection] = useState<"NUMA_TO_WLD" | "WLD_TO_NUMA">("NUMA_TO_WLD");
   const [selectedMembership, setSelectedMembership] = useState<"plus" | "vip">("plus");
   const [pioneerAmount, setPioneerAmount] = useState("50");
   const [showMembershipSection, setShowMembershipSection] = useState(false);
@@ -38,12 +39,40 @@ export default function Staking() {
   const [acceptedPioneerTerms, setAcceptedPioneerTerms] = useState(false);
   const [showPioneerConfirmation, setShowPioneerConfirmation] = useState(false);
   const [showWithdrawConfirmation, setShowWithdrawConfirmation] = useState(false);
+  const [showMembershipConfirmation, setShowMembershipConfirmation] = useState(false);
+  const [showSwapConfirmation, setShowSwapConfirmation] = useState(false);
+  const [accumulatedReward, setAccumulatedReward] = useState(0);
+
+  // Staking en tiempo real - acumular recompensas cada segundo
+  useEffect(() => {
+    if (!user || !canClaim()) return; // Solo acumular si puede reclamar
+    
+    const dailyReward = getCurrentDailyReward(user.membership.tier, user.createdAt);
+    const rewardPerSecond = dailyReward / (24 * 60 * 60); // Dividir recompensa diaria entre segundos del día
+    
+    const interval = setInterval(() => {
+      setAccumulatedReward(prev => prev + rewardPerSecond);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [user?.membership.tier, user?.createdAt, canClaim, user]);
 
   if (!user) return null;
 
   const swapNum = parseFloat(swapAmount) || 0;
   const pioneerNum = parseFloat(pioneerAmount) || 0;
-  const { wldReceived, fee } = calculateSwapWithFee(swapNum);
+  
+  // Cálculo de swap según dirección
+  let swapResult: { wldReceived?: number; numaReceived?: number; fee: number } = { fee: 0 };
+  if (swapDirection === "NUMA_TO_WLD") {
+    swapResult = calculateSwapWithFee(swapNum);
+  } else {
+    // WLD → NUMA
+    const numaGross = swapNum * 1000; // 1 WLD = 1000 NUMA
+    const fee = numaGross * 0.03;
+    swapResult = { numaReceived: numaGross - fee, fee };
+  }
+  
   const canClaimReward = canClaim();
   const dailyReward = getCurrentDailyReward(user.membership.tier, user.createdAt);
 
@@ -56,35 +85,58 @@ export default function Staking() {
 
   const handleClaim = () => {
     if (!canClaimReward) return;
-    updateBalance(user.balanceNuma + dailyReward, user.balanceWld);
+    const totalReward = dailyReward + accumulatedReward;
+    updateBalance(user.balanceNuma + totalReward, user.balanceWld);
     setLastClaim(new Date());
-    alert(`✅ Has reclamado ${dailyReward} NUMA`);
+    setAccumulatedReward(0);
+    alert(`✅ Has reclamado ${formatNumber(totalReward, 2)} NUMA`);
   };
 
-  const handleSwap = () => {
+  const handleSwapClick = () => {
     if (swapNum <= 0) {
       alert("❌ Ingresa una cantidad válida");
       return;
     }
-    if (swapNum > user.balanceNuma) {
+    
+    if (swapDirection === "NUMA_TO_WLD" && swapNum > user.balanceNuma) {
       alert("❌ No tienes suficiente NUMA");
       return;
     }
-    updateBalance(user.balanceNuma - swapNum, user.balanceWld + wldReceived);
-    setSwapAmount("100");
-    alert(`✅ Swap exitoso: ${swapNum} NUMA → ${formatNumber(wldReceived, 2)} WLD`);
+    
+    if (swapDirection === "WLD_TO_NUMA" && swapNum > user.balanceWld) {
+      alert("❌ No tienes suficiente WLD");
+      return;
+    }
+    
+    setShowSwapConfirmation(true);
   };
 
-  const handleBuyMembership = () => {
+  const confirmSwap = () => {
+    if (swapDirection === "NUMA_TO_WLD") {
+      const { wldReceived } = swapResult as { wldReceived: number; fee: number };
+      updateBalance(user.balanceNuma - swapNum, user.balanceWld + wldReceived);
+    } else {
+      const { numaReceived } = swapResult as { numaReceived: number; fee: number };
+      updateBalance(user.balanceNuma + numaReceived, user.balanceWld - swapNum);
+    }
+    setSwapAmount("100");
+    setShowSwapConfirmation(false);
+  };
+
+  const handleBuyMembershipClick = () => {
     const price = MEMBERSHIP_PRICES[selectedMembership];
     if (user.balanceWld < price) {
       alert(`❌ Necesitas ${price} WLD para comprar ${selectedMembership.toUpperCase()}`);
       return;
     }
-    const expiresAtTimestamp = Date.now() + (365 * 24 * 60 * 60 * 1000);
-    updateMembership(selectedMembership, expiresAtTimestamp);
+    setShowMembershipConfirmation(true);
+  };
+
+  const confirmBuyMembership = () => {
+    const price = MEMBERSHIP_PRICES[selectedMembership];
+    updateMembership(selectedMembership, 365);
     updateBalance(user.balanceNuma, user.balanceWld - price);
-    alert(`✅ Membresía ${selectedMembership.toUpperCase()} activada por 1 año`);
+    setShowMembershipConfirmation(false);
   };
 
   const MIN_PIONEER_STAKE = 50;
@@ -203,20 +255,25 @@ export default function Staking() {
           </div>
         </div>
 
-        {/* Daily Rewards */}
+        {/* Daily Rewards con acumulación en tiempo real */}
         <div className="card-modern p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
               <Gift className="w-6 h-6 text-green-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <div className="text-sm text-gray-500 font-medium">Recompensa Diaria</div>
               <div className="text-xs text-gray-400">{timeUntilNextClaim}</div>
             </div>
           </div>
-          <div className="text-4xl font-bold text-gray-900 mb-4">
-            {dailyReward} NUMA
+          <div className="text-4xl font-bold text-gray-900 mb-2">
+            {formatNumber(dailyReward + accumulatedReward, 2)} NUMA
           </div>
+          {accumulatedReward > 0 && (
+            <div className="text-sm text-green-600 mb-4">
+              +{formatNumber(accumulatedReward, 4)} NUMA generándose en tiempo real
+            </div>
+          )}
           <button
             onClick={handleClaim}
             disabled={!canClaimReward}
@@ -230,47 +287,70 @@ export default function Staking() {
           </button>
         </div>
 
-        {/* Swap NUMA → WLD */}
+        {/* Swap NUMA ↔ WLD con dirección bidireccional */}
         <div className="card-modern p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
               <ArrowLeftRight className="w-6 h-6 text-blue-600" />
             </div>
-            <div>
-              <div className="text-sm text-gray-500 font-medium">Intercambiar NUMA por WLD</div>
-              <div className="text-xs text-gray-400">Tasa: 1,000 NUMA = 1 WLD (fee 1%)</div>
+            <div className="flex-1">
+              <div className="text-sm text-gray-500 font-medium">Intercambiar Tokens</div>
+              <div className="text-xs text-gray-400">Tasa: 1,000 NUMA = 1 WLD</div>
             </div>
           </div>
+          
+          {/* Selector de dirección */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <button
+              onClick={() => setSwapDirection("NUMA_TO_WLD")}
+              className={`py-3 rounded-xl font-bold transition-all ${
+                swapDirection === "NUMA_TO_WLD"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              NUMA → WLD
+            </button>
+            <button
+              onClick={() => setSwapDirection("WLD_TO_NUMA")}
+              className={`py-3 rounded-xl font-bold transition-all ${
+                swapDirection === "WLD_TO_NUMA"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              WLD → NUMA
+            </button>
+          </div>
+          
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-gray-500 font-medium mb-2 block">Cantidad NUMA</label>
+              <label className="text-sm text-gray-500 font-medium mb-2 block">
+                Cantidad {swapDirection === "NUMA_TO_WLD" ? "NUMA" : "WLD"}
+              </label>
               <input
                 type="number"
                 value={swapAmount}
                 onChange={(e) => setSwapAmount(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="100"
-                min="100"
+                min="1"
               />
             </div>
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+            <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Recibirás:</span>
-                <span className="font-bold text-gray-900">{formatNumber(wldReceived, 2)} WLD</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Comisión (1%):</span>
-                <span className="text-red-600 font-bold">-{formatNumber(fee, 2)} WLD</span>
+                <span className="font-bold text-gray-900">
+                  {swapDirection === "NUMA_TO_WLD" 
+                    ? `${formatNumber(swapResult.wldReceived || 0, 2)} WLD`
+                    : `${formatNumber(swapResult.numaReceived || 0, 2)} NUMA`
+                  }
+                </span>
               </div>
             </div>
             <button
-              onClick={handleSwap}
-              disabled={swapNum < 100 || swapNum > user.balanceNuma}
-              className={`w-full py-3 rounded-xl font-bold transition-all ${
-                swapNum >= 100 && swapNum <= user.balanceNuma
-                  ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
+              onClick={handleSwapClick}
+              className="w-full py-3 rounded-xl font-bold transition-all bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
             >
               Intercambiar
             </button>
@@ -324,8 +404,8 @@ export default function Staking() {
                 </button>
               </div>
               <button
-                onClick={handleBuyMembership}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:opacity-90 active:scale-[0.98] transition-all"
+                onClick={handleBuyMembershipClick}
+                className="w-full py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 active:scale-[0.98] transition-all"
               >
                 Comprar {selectedMembership.toUpperCase()} por {MEMBERSHIP_PRICES[selectedMembership]} WLD
               </button>
@@ -357,13 +437,71 @@ export default function Staking() {
 
           {showPioneerSection && (
             <div className="space-y-4 mt-4 border-t border-gray-200 pt-4">
-              <div className="bg-yellow-50 rounded-xl p-4 text-sm text-gray-700">
-                <strong>¿Cómo funciona?</strong>
-                <ul className="mt-2 space-y-1 text-xs">
-                  <li>• Bloquea mínimo 50 WLD por 1 año</li>
-                  <li>• Los Top 100 pioneros acceden a créditos (hasta 50% del capital)</li>
-                  <li>• Mayor capital bloqueado = mejor ranking</li>
-                </ul>
+              
+              {/* Información detallada del sistema de Pioneros */}
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 border border-yellow-200">
+                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-600" />
+                  ¿Qué es ser un Pionero?
+                </h4>
+                <p className="text-sm text-gray-700 mb-4">
+                  Los Pioneros son inversores elite que bloquean capital en WLD por 1 año para acceder a 
+                  beneficios exclusivos y participar en el crecimiento de la plataforma.
+                </p>
+
+                <div className="space-y-3 text-sm">
+                  <div className="bg-white rounded-lg p-3 border border-yellow-100">
+                    <div className="font-bold text-yellow-800 mb-2">✨ Beneficios Exclusivos:</div>
+                    <ul className="space-y-1 text-gray-700 text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Créditos garantizados:</strong> Los Top 100 pueden solicitar préstamos hasta el 50% de su capital bloqueado</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Participación en ganancias:</strong> Recibe pagos quincenales del 15% de las ganancias de la plataforma, distribuido según tu ranking</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Ranking dinámico:</strong> Mayor capital bloqueado = mejor posición = mayores beneficios</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span><strong>Gobernanza:</strong> Voto en decisiones importantes de la plataforma</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-3 border border-yellow-100">
+                    <div className="font-bold text-gray-800 mb-2">📋 Requisitos:</div>
+                    <ul className="space-y-1 text-gray-700 text-xs">
+                      <li>• Bloquear mínimo <strong>50 WLD</strong> por 365 días</li>
+                      <li>• El capital queda bloqueado y no puede retirarse sin penalización</li>
+                      <li>• Puedes agregar más capital en cualquier momento (mínimo 10 WLD)</li>
+                      <li>• El retiro anticipado tiene penalización del <strong>20%</strong></li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="font-bold text-blue-800 mb-2">💰 Sistema de Créditos (Top 100):</div>
+                    <ul className="space-y-1 text-gray-700 text-xs">
+                      <li>• Préstamos de hasta el <strong>50% de tu capital bloqueado</strong></li>
+                      <li>• Sin verificación crediticia ni trámites complicados</li>
+                      <li>• Tasas preferenciales para pioneros de alto ranking</li>
+                      <li>• Pagos flexibles respaldados por tu capital bloqueado</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-3 border border-red-100">
+                    <div className="font-bold text-red-800 mb-2">⚠️ Importante:</div>
+                    <ul className="space-y-1 text-gray-700 text-xs">
+                      <li>• Tu capital estará <strong>bloqueado 1 año</strong> desde el depósito inicial</li>
+                      <li>• Retirar antes de tiempo: <strong>penalización del 20%</strong></li>
+                      <li>• No podrás volver a inscribirte como pionero si retiras</li>
+                      <li>• Solo los Top 100 tienen acceso a créditos</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
               
               <div>
@@ -571,6 +709,150 @@ export default function Staking() {
                 className="py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 transition-all"
               >
                 Confirmar Retiro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación - Membresía */}
+      {showMembershipConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-modern max-w-lg w-full p-6 space-y-4">
+            <h3 className="text-xl font-bold text-gray-900">
+              Confirmar Compra de Membresía {selectedMembership === "plus" ? "Plus" : "VIP"}
+            </h3>
+            
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="text-sm text-gray-700">
+                <p className="font-bold text-gray-900 mb-3">Estás adquiriendo:</p>
+                
+                {selectedMembership === "plus" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>Recompensas diarias: <strong>200 NUMA</strong> (después de 3 meses: <strong>500 NUMA</strong>)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>Apalancamiento máximo: <strong>30x</strong></span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>Duración: <strong>365 días</strong></span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600">✓</span>
+                      <span>Acceso a trading avanzado</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-purple-600">✓</span>
+                      <span>Recompensas diarias: <strong>500 NUMA</strong> (después de 3 meses: <strong>1000 NUMA</strong>)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-purple-600">✓</span>
+                      <span>Apalancamiento máximo: <strong>500x</strong></span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-purple-600">✓</span>
+                      <span>Duración: <strong>365 días</strong></span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-purple-600">✓</span>
+                      <span>Acceso prioritario a nuevas funciones</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-purple-600">✓</span>
+                      <span>Soporte premium 24/7</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Costo total:</span>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {MEMBERSHIP_PRICES[selectedMembership]} WLD
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowMembershipConfirmation(false)}
+                className="py-3 rounded-xl font-bold border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmBuyMembership}
+                className={`py-3 rounded-xl font-bold text-white transition-all ${
+                  selectedMembership === "plus" 
+                    ? "bg-blue-600 hover:bg-blue-700" 
+                    : "bg-purple-600 hover:bg-purple-700"
+                }`}
+              >
+                Confirmar Compra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación - Swap */}
+      {showSwapConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-modern max-w-lg w-full p-6 space-y-4">
+            <h3 className="text-xl font-bold text-gray-900">Confirmar Intercambio</h3>
+            
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-center flex-1">
+                  <div className="text-sm text-gray-500 mb-1">Envías</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatNumber(swapNum, 2)} {swapDirection === "NUMA_TO_WLD" ? "NUMA" : "WLD"}
+                  </div>
+                </div>
+                <div className="text-gray-400 px-4">
+                  →
+                </div>
+                <div className="text-center flex-1">
+                  <div className="text-sm text-gray-500 mb-1">Recibes</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {swapDirection === "NUMA_TO_WLD" 
+                      ? `${formatNumber(swapResult.wldReceived || 0, 2)} WLD`
+                      : `${formatNumber(swapResult.numaReceived || 0, 2)} NUMA`
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="text-sm text-gray-700">
+                  <p className="font-bold text-blue-900 mb-1">Tasa de cambio:</p>
+                  <p>1 WLD = 1,000 NUMA</p>
+                  <p className="text-xs text-gray-600 mt-1">Incluye comisión del 3% ya descontada</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowSwapConfirmation(false)}
+                className="py-3 rounded-xl font-bold border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmSwap}
+                className="py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all"
+              >
+                Confirmar Swap
               </button>
             </div>
           </div>
