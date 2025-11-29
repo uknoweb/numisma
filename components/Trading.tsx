@@ -249,136 +249,100 @@ export default function Trading() {
           </div>
 
           {/* Gráfica simple con líneas */}
-          <div className="h-64 bg-gray-50 rounded-xl overflow-hidden relative">
-            {(() => {
-              // Verificar datos básicos
-              const hasData = priceHistory && priceHistory.length >= 2;
-              const hasValidPrices = !isNaN(currentPrice) && currentPrice > 0;
+          <div className="h-64 bg-gray-50 rounded-xl overflow-hidden p-4">
+            <svg 
+              width="100%" 
+              height="100%" 
+              viewBox="0 0 600 200" 
+              preserveAspectRatio="xMidYMid meet"
+              className="block"
+            >
+              {/* Fondo */}
+              <rect width="600" height="200" fill="#f9fafb" />
               
-              if (!hasData || !hasValidPrices) {
-                return (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-gray-400 text-sm font-medium">Inicializando gráfico...</div>
-                      <div className="text-gray-300 text-xs mt-1">
-                        Datos: {priceHistory?.length || 0} | Precio: {currentPrice || 0}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <svg 
-                  viewBox="0 0 600 250" 
-                  className="w-full h-full block"
-                  preserveAspectRatio="xMidYMid meet"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Grid de fondo */}
-                  <defs>
-                    <pattern id="grid-pattern" width="50" height="50" patternUnits="userSpaceOnUse">
-                      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
-                    </pattern>
-                  </defs>
-                  <rect width="600" height="250" fill="url(#grid-pattern)" />
+              {/* Grid */}
+              <line x1="50" y1="0" x2="50" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+              <line x1="200" y1="0" x2="200" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+              <line x1="350" y1="0" x2="350" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+              <line x1="500" y1="0" x2="500" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+              <line x1="0" y1="100" x2="600" y2="100" stroke="#d1d5db" strokeWidth="2" strokeDasharray="5,5" />
+              
+              {(() => {
+                if (!priceHistory || priceHistory.length < 2) {
+                  return (
+                    <text x="300" y="100" textAnchor="middle" fill="#9ca3af" fontSize="14">
+                      Cargando...
+                    </text>
+                  );
+                }
+                
+                try {
+                  const padding = 50;
+                  const width = 500;
+                  const height = 160;
+                  const top = 20;
                   
-                  {/* Línea horizontal central */}
-                  <line x1="40" y1="125" x2="560" y2="125" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="5,5" />
+                  const max = Math.max(...priceHistory);
+                  const min = Math.min(...priceHistory);
+                  const range = max - min || 0.01;
                   
-                  {/* Línea de precio */}
-                  {(() => {
-                    try {
-                      const padding = 40;
-                      const chartWidth = 520;
-                      const chartHeight = 210;
-                      const topPadding = 20;
-
-                      // Normalizar valores para evitar divisiones por cero
-                      const safeMaxPrice = maxPrice > 0 ? maxPrice : currentPrice * 1.01;
-                      const safeMinPrice = minPrice > 0 ? minPrice : currentPrice * 0.99;
-                      const safePriceRange = Math.max(safeMaxPrice - safeMinPrice, currentPrice * 0.02);
-
-                      const pathData = priceHistory
-                        .map((price, i) => {
-                          const x = padding + (i / (priceHistory.length - 1)) * chartWidth;
-                          const normalizedY = ((safeMaxPrice - price) / safePriceRange);
-                          const y = topPadding + (normalizedY * chartHeight);
-                          return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-                        })
-                        .join(' ');
-
-                      return (
-                        <>
-                          {/* Línea de precio principal */}
-                          <path
-                            d={pathData}
-                            fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          
-                          {/* Marcadores de posiciones */}
-                          {myPositions.map((pos) => {
-                            const normalizedY = ((safeMaxPrice - pos.entryPrice) / safePriceRange);
-                            const entryY = topPadding + (normalizedY * chartHeight);
-                            const posColor = pos.type === "long" ? "#22c55e" : "#ef4444";
-                            
-                            return (
-                              <g key={pos.id}>
-                                <line
-                                  x1={padding}
-                                  y1={entryY}
-                                  x2={560}
-                                  y2={entryY}
-                                  stroke={posColor}
-                                  strokeWidth="1.5"
-                                  strokeDasharray="6,3"
-                                  opacity="0.6"
-                                />
-                                <circle
-                                  cx={540}
-                                  cy={entryY}
-                                  r="4"
-                                  fill={posColor}
-                                />
-                                <text
-                                  x={535}
-                                  y={entryY - 8}
-                                  textAnchor="end"
-                                  fill={posColor}
-                                  fontSize="11"
-                                  fontWeight="600"
-                                >
-                                  {pos.type.toUpperCase()}
-                                </text>
-                              </g>
-                            );
-                          })}
-
-                          {/* Etiquetas de precio */}
-                          <text x="10" y="25" fill="#6b7280" fontSize="11" fontWeight="500">
-                            {formatNumber(safeMaxPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
-                          </text>
-                          <text x="10" y="245" fill="#6b7280" fontSize="11" fontWeight="500">
-                            {formatNumber(safeMinPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
-                          </text>
-                        </>
-                      );
-                    } catch (error) {
-                      console.error('Error rendering chart:', error);
-                      return (
-                        <text x="300" y="125" textAnchor="middle" fill="#ef4444" fontSize="12" fontWeight="500">
-                          Error al renderizar gráfico
-                        </text>
-                      );
-                    }
-                  })()}
-                </svg>
-              );
-            })()}
+                  const points = priceHistory.map((price, i) => {
+                    const x = padding + (i / (priceHistory.length - 1)) * width;
+                    const y = top + ((max - price) / range) * height;
+                    return `${x},${y}`;
+                  }).join(' ');
+                  
+                  return (
+                    <>
+                      <polyline
+                        points={points}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Etiquetas */}
+                      <text x="10" y="30" fill="#6b7280" fontSize="11">
+                        {formatNumber(max, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                      </text>
+                      <text x="10" y="190" fill="#6b7280" fontSize="11">
+                        {formatNumber(min, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                      </text>
+                      
+                      {/* Marcadores de posiciones */}
+                      {myPositions.map((pos) => {
+                        const y = top + ((max - pos.entryPrice) / range) * height;
+                        const color = pos.type === "long" ? "#22c55e" : "#ef4444";
+                        return (
+                          <g key={pos.id}>
+                            <line
+                              x1={padding}
+                              y1={y}
+                              x2={550}
+                              y2={y}
+                              stroke={color}
+                              strokeWidth="1.5"
+                              strokeDasharray="6,3"
+                              opacity="0.7"
+                            />
+                            <circle cx="540" cy={y} r="4" fill={color} />
+                          </g>
+                        );
+                      })}
+                    </>
+                  );
+                } catch (err) {
+                  console.error('Chart error:', err);
+                  return (
+                    <text x="300" y="100" textAnchor="middle" fill="#ef4444" fontSize="12">
+                      Error
+                    </text>
+                  );
+                }
+              })()}
+            </svg>
           </div>
 
           <div className="mt-4 bg-gray-50 rounded-lg p-3">
