@@ -128,9 +128,19 @@ export default function Staking() {
   };
 
   const handleBuyMembershipClick = () => {
-    const cost = selectedMembership === "plus" ? 10 : 90;
-    if (user.balanceNuma < cost) {
-      alert(`❌ Necesitas ${cost} NUMA para comprar ${selectedMembership.toUpperCase()}`);
+    // Calcular costo según membresía y año
+    let cost = 0;
+    const isFirstYear = !user.membership.monthsPaid || user.membership.monthsPaid < 12;
+    
+    if (selectedMembership === "plus") {
+      cost = isFirstYear ? 5 : 10; // 5 WLD primer año, 10 WLD después
+    } else {
+      // VIP: 3 meses adelantados
+      cost = isFirstYear ? 45 : 60; // 45 WLD primer año (15/mes), 60 WLD después (20/mes)
+    }
+    
+    if (user.balanceWld < cost) {
+      alert(`❌ Necesitas ${cost} WLD para comprar ${selectedMembership.toUpperCase()}`);
       return;
     }
     setShowMembershipConfirmation(true);
@@ -139,27 +149,36 @@ export default function Staking() {
   const confirmBuyMembership = () => {
     if (!user) return;
     
-    // Calcular costo y duración según tipo de membresía
-    const cost = selectedMembership === "plus" ? 10 : 90; // 10 NUMA para Plus, 90 NUMA para VIP
-    const duration = selectedMembership === "plus" ? 1 : 3; // 1 mes para Plus, 3 meses para VIP
+    // Calcular costo y duración según tipo de membresía y año
+    const isFirstYear = !user.membership.monthsPaid || user.membership.monthsPaid < 12;
+    let cost = 0;
+    let duration = 0;
+    
+    if (selectedMembership === "plus") {
+      cost = isFirstYear ? 5 : 10; // 5 WLD primer año, 10 WLD después
+      duration = 1; // 1 mes
+    } else {
+      cost = isFirstYear ? 45 : 60; // 45 WLD primer año, 60 WLD después
+      duration = 3; // 3 meses
+    }
     
     // Verificar balance
-    if (user.balanceNuma < cost) {
-      alert(`❌ Balance insuficiente. Necesitas ${cost} NUMA`);
+    if (user.balanceWld < cost) {
+      alert(`❌ Balance insuficiente. Necesitas ${cost} WLD`);
       return;
     }
     
     // Actualizar membresía
     updateMembership(selectedMembership, duration);
     
-    // Descontar NUMA
-    updateBalance(user.balanceNuma - cost, user.balanceWld);
+    // Descontar WLD
+    updateBalance(user.balanceNuma, user.balanceWld - cost);
     
     // Registrar transacción
     const description = selectedMembership === "plus" 
-      ? "Membresía Plus (1 mes)" 
-      : "Membresía VIP (3 meses adelantados)";
-    addTransaction("membership", description, cost, "NUMA");
+      ? `Membresía Plus (1 mes) - ${cost} WLD` 
+      : `Membresía VIP (3 meses) - ${cost} WLD`;
+    addTransaction("membership", description, cost, "WLD");
     
     setShowMembershipConfirmation(false);
     alert(`✅ Membresía ${selectedMembership.toUpperCase()} activada por ${duration} ${duration === 1 ? 'mes' : 'meses'}`);
@@ -418,7 +437,9 @@ export default function Staking() {
                   <div className="text-lg font-bold text-gray-900 mb-1">Plus</div>
                   <div className="text-sm text-gray-500 mb-1">200 NUMA/día</div>
                   <div className="text-xs text-gray-400 mb-2">Pago mensual</div>
-                  <div className="text-xl font-bold text-blue-600">10 NUMA/mes</div>
+                  <div className="text-xl font-bold text-blue-600">5 WLD/mes</div>
+                  <div className="text-xs text-gray-500 mt-1">Primer año</div>
+                  <div className="text-xs text-gray-400">Después: 10 WLD/mes</div>
                 </button>
                 <button
                   onClick={() => setSelectedMembership("vip")}
@@ -431,8 +452,9 @@ export default function Staking() {
                   <div className="text-lg font-bold text-gray-900 mb-1">VIP</div>
                   <div className="text-sm text-gray-500 mb-1">500 NUMA/día</div>
                   <div className="text-xs text-gray-400 mb-2">3 meses adelantados</div>
-                  <div className="text-xl font-bold text-purple-600">90 NUMA</div>
-                  <div className="text-xs text-gray-500 mt-1">(30 NUMA/mes)</div>
+                  <div className="text-xl font-bold text-purple-600">45 WLD</div>
+                  <div className="text-xs text-gray-500 mt-1">(15 WLD/mes) Primer año</div>
+                  <div className="text-xs text-gray-400">Después: 60 WLD/3 meses</div>
                 </button>
               </div>
               <button
@@ -775,15 +797,18 @@ export default function Staking() {
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="text-blue-600">✓</span>
-                        <span>Renovación: <strong>Mensual automática</strong></span>
+                        <span>Renovación: <strong>Manual (no automática)</strong></span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Costo:</span>
-                      <span className="text-xl font-bold text-blue-600">10 NUMA</span>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-600">Costo (Primer año):</span>
+                      <span className="text-xl font-bold text-blue-600">5 WLD</span>
+                    </div>
+                    <div className="text-xs text-gray-500 text-right">
+                      Después del año: 10 WLD/mes
                     </div>
                   </div>
                 </>
@@ -802,11 +827,19 @@ export default function Staking() {
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="text-purple-600">✓</span>
-                        <span>Pago inicial: <strong>3 meses adelantados</strong></span>
+                        <span>Pago: <strong>3 meses adelantados obligatorio</strong></span>
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="text-purple-600">✓</span>
-                        <span>Después de 6 meses: <strong>Pago mensual disponible</strong></span>
+                        <span>Siguiente pago: <strong>Otros 3 meses</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Después del 6to mes: <strong>Pago mensual (15 WLD)</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Renovación: <strong>Manual (no automática)</strong></span>
                       </div>
                     </div>
                   </div>
@@ -831,12 +864,12 @@ export default function Staking() {
                   </div>
 
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Costo (3 meses):</span>
-                      <span className="text-xl font-bold text-purple-600">90 NUMA</span>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-600">Costo (3 meses - Primer año):</span>
+                      <span className="text-xl font-bold text-purple-600">45 WLD</span>
                     </div>
-                    <div className="text-xs text-gray-500 text-right mt-1">
-                      (30 NUMA/mes)
+                    <div className="text-xs text-gray-500 text-right">
+                      (15 WLD/mes) • Después del año: 60 WLD/3 meses (20 WLD/mes)
                     </div>
                   </div>
 

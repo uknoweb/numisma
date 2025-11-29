@@ -478,15 +478,16 @@ export default function Trading() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Apalancamiento:</span>
-                <span className="font-bold text-indigo-600">
-                  {leverage}x
-                </span>
+                <span className="font-bold text-indigo-600">{leverage}x</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">P&L estimado (+1%):</span>
                 <span className="text-green-600 font-bold">
                   +{formatNumber(estimatedPnL1Percent, 2)} {balanceSymbol}
                 </span>
+              </div>
+              <div className="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">
+                * Se aplica una comisión menor al 1% en operaciones
               </div>
             </div>
           )}

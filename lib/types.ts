@@ -138,13 +138,15 @@ export const LEVERAGE_CONFIG: LeverageConfig = {
 
 export const MEMBERSHIP_PRICES = {
   plus: {
-    monthly: 10, // 10 NUMA por mes (pago mensual)
+    firstYear: 5, // 5 WLD por mes (primer año)
+    afterYear: 10, // 10 WLD por mes (después del año)
     duration: 1, // Duración de 1 mes
   },
   vip: {
-    quarterly: 90, // 90 NUMA por 3 meses (30 NUMA/mes)
+    firstYearQuarterly: 45, // 45 WLD por 3 meses (15 WLD/mes primer año)
+    afterYearQuarterly: 60, // 60 WLD por 3 meses (20 WLD/mes después del año)
+    monthlyAfter6: 15, // 15 WLD/mes después de 6 meses consecutivos
     duration: 3, // Mínimo 3 meses
-    monthlyAfter6: 30, // Después de 6 meses puede pagar mensual
   },
 };
 
