@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/vercel-postgres";
-import { sql } from "@vercel/postgres";
+import { sql as vercelSql } from "@vercel/postgres";
+import { eq } from "drizzle-orm";
 import * as schema from "./schema";
 
 /**
@@ -9,7 +10,7 @@ import * as schema from "./schema";
  * import { db } from "@/lib/db";
  * const users = await db.select().from(schema.users);
  */
-export const db = drizzle(sql, { schema });
+export const db = drizzle(vercelSql, { schema });
 
 /**
  * Helper para testing/desarrollo - Crear usuario de prueba
@@ -34,7 +35,7 @@ export async function getOrCreateUser(walletAddress: string, worldIdHash: string
   const existingUser = await db
     .select()
     .from(schema.users)
-    .where(sql`${schema.users.walletAddress} = ${walletAddress}`)
+    .where(eq(schema.users.walletAddress, walletAddress))
     .limit(1);
   
   if (existingUser.length > 0) {
@@ -42,7 +43,7 @@ export async function getOrCreateUser(walletAddress: string, worldIdHash: string
     await db
       .update(schema.users)
       .set({ lastLoginAt: new Date() })
-      .where(sql`${schema.users.id} = ${existingUser[0].id}`);
+      .where(eq(schema.users.id, existingUser[0].id));
     
     return existingUser[0];
   }

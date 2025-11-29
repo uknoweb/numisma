@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { positions } from "@/lib/db/schema";
-import { sql } from "@vercel/postgres";
+import { eq, desc, and } from "drizzle-orm";
 
 /**
  * GET /api/positions/:userId
@@ -16,17 +16,16 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status"); // 'open' | 'closed' | 'liquidated'
     
-    let query = db
+    // Construir condiciones
+    const conditions = status
+      ? and(eq(positions.userId, userId), eq(positions.status, status))
+      : eq(positions.userId, userId);
+    
+    const userPositions = await db
       .select()
       .from(positions)
-      .where(sql`${positions.userId} = ${userId}`);
-    
-    // Filtrar por estado si se proporciona
-    if (status) {
-      query = query.where(sql`${positions.status} = ${status}` as any);
-    }
-    
-    const userPositions = await query.orderBy(sql`${positions.createdAt} DESC`);
+      .where(conditions)
+      .orderBy(desc(positions.createdAt));
     
     return NextResponse.json({ positions: userPositions });
   } catch (error) {

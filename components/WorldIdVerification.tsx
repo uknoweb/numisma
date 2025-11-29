@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { Shield, Loader2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { verifyWithWorldID } from "@/lib/minikit";
+import { useDatabase } from "@/hooks/useDatabase";
 
 export default function WorldIdVerification() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setWorldIdVerified = useAppStore((state) => state.setWorldIdVerified);
-  const setUser = useAppStore((state) => state.setUser);
+  const { loginUser } = useDatabase();
 
   const handleVerify = async () => {
     setIsVerifying(true);
@@ -19,68 +20,38 @@ export default function WorldIdVerification() {
       // Intentar verificación real con World ID
       const result = await verifyWithWorldID();
       
+      let worldIdHash: string;
+      let walletAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"; // Default para desarrollo
+      
       if (result.success && result.nullifier_hash) {
-        // Verificación exitosa
-        const mockUser = {
-          id: "user_" + Date.now(),
-          walletAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-          isVerified: true,
-          worldId: result.nullifier_hash,
-          balanceNuma: 10000,
-          balanceWld: 100000,
-          membership: {
-            tier: "free" as const,
-            startedAt: new Date(),
-            expiresAt: null,
-            monthsPaid: 0,
-            consecutiveMonths: 0,
-            dailyRewards: 50,
-            maxLeverage: 10,
-            creditLine: null,
-            activeLoan: null,
-            hasDefaulted: false,
-            walletFrozen: false,
-          },
-          locale: "es-MX",
-          createdAt: new Date(),
-        };
-
-        setUser(mockUser);
-        setWorldIdVerified(true);
+        // Verificación exitosa con World ID real
+        worldIdHash = result.nullifier_hash;
+        console.log("✅ World ID verification successful:", worldIdHash);
       } else {
-        // Si falla la verificación real, usar modo simulación para desarrollo
-        console.warn("World ID verification not available, using simulation mode");
-        
-        const mockUser = {
-          id: "user_" + Date.now(),
-          walletAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-          isVerified: true,
-          worldId: "world_id_simulated_" + Date.now(),
-          balanceNuma: 10000,
-          balanceWld: 100000,
-          membership: {
-            tier: "free" as const,
-            startedAt: new Date(),
-            expiresAt: null,
-            monthsPaid: 0,
-            consecutiveMonths: 0,
-            dailyRewards: 50,
-            maxLeverage: 10,
-            creditLine: null,
-            activeLoan: null,
-            hasDefaulted: false,
-            walletFrozen: false,
-          },
-          locale: "es-MX",
-          createdAt: new Date(),
-        };
-
-        setUser(mockUser);
-        setWorldIdVerified(true);
+        // Modo simulación para desarrollo
+        worldIdHash = "world_id_simulated_" + Date.now();
+        console.warn("⚠️ World ID verification not available, using simulation mode");
       }
+
+      // Autenticar con la base de datos
+      const { user: dbUser, isNewUser } = await loginUser(walletAddress, worldIdHash);
+      
+      if (isNewUser) {
+        console.log("🎉 New user registered:", dbUser.id);
+      } else {
+        console.log("👋 Existing user logged in:", dbUser.id);
+      }
+
+      // Marcar como verificado
+      setWorldIdVerified(true);
+      
     } catch (err) {
       console.error("Verification error:", err);
-      setError("Error en la verificación. Intenta de nuevo.");
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : "Error en la verificación. Intenta de nuevo."
+      );
     } finally {
       setIsVerifying(false);
     }

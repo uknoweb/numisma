@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { MiniKitProvider } from "@/components/MiniKitProvider";
 import { WagmiConfigProvider } from "@/components/WagmiConfigProvider";
+import { DatabaseProvider } from "@/lib/DatabaseContext";
 
 export const metadata: Metadata = {
   title: "Numisma - Plataforma Educativa de Trading",
@@ -28,9 +29,11 @@ export default function RootLayout({
       <body className="antialiased overflow-x-hidden">
         <WagmiConfigProvider>
           <MiniKitProvider>
-            <div className="min-h-screen w-full max-w-full">
-              {children}
-            </div>
+            <DatabaseProvider>
+              <div className="min-h-screen w-full max-w-full">
+                {children}
+              </div>
+            </DatabaseProvider>
           </MiniKitProvider>
         </WagmiConfigProvider>
       </body>

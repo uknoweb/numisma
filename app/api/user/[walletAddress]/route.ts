@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { sql } from "@vercel/postgres";
+import { eq } from "drizzle-orm";
 
 /**
  * GET /api/user/:walletAddress
@@ -17,7 +17,7 @@ export async function GET(
     const user = await db
       .select()
       .from(users)
-      .where(sql`${users.walletAddress} = ${walletAddress}`)
+      .where(eq(users.walletAddress, walletAddress))
       .limit(1);
     
     if (user.length === 0) {
@@ -53,7 +53,7 @@ export async function PATCH(
     const existingUser = await db
       .select()
       .from(users)
-      .where(sql`${users.walletAddress} = ${walletAddress}`)
+      .where(eq(users.walletAddress, walletAddress))
       .limit(1);
     
     if (existingUser.length === 0) {
@@ -70,7 +70,7 @@ export async function PATCH(
         ...body,
         updatedAt: new Date(),
       })
-      .where(sql`${users.walletAddress} = ${walletAddress}`)
+      .where(eq(users.walletAddress, walletAddress))
       .returning();
     
     return NextResponse.json({ user: updatedUser[0] });
