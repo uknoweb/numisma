@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@vercel/postgres";
 
 /**
  * API Route: Cancelar orden avanzada
@@ -6,26 +7,24 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { orderId } = await request.json();
+    const { orderId, userId } = await request.json();
 
-    if (!orderId) {
+    if (!orderId || !userId) {
       return NextResponse.json(
-        { error: 'orderId es requerido' },
+        { error: 'orderId y userId son requeridos' },
         { status: 400 }
       );
     }
 
-    // TODO: Implementar lógica de base de datos
-    /*
     // Verificar que la orden existe y está activa
-    const { data: order } = await supabase
-      .from('advanced_orders')
-      .select('*')
-      .eq('id', orderId)
-      .in('status', ['active', 'pending'])
-      .single();
+    const order = await sql`
+      SELECT * FROM advanced_orders
+      WHERE id = ${orderId}
+        AND user_id = ${userId}
+        AND status IN ('active', 'pending')
+    `;
 
-    if (!order) {
+    if (order.rows.length === 0) {
       return NextResponse.json(
         { error: 'Orden no encontrada o ya ejecutada' },
         { status: 404 }
@@ -33,25 +32,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Cancelar orden
-    const { error } = await supabase
-      .from('advanced_orders')
-      .update({ 
-        status: 'cancelled',
-        cancelled_at: new Date(),
-      })
-      .eq('id', orderId);
-
-    if (error) throw error;
+    await sql`
+      UPDATE advanced_orders
+      SET status = 'cancelled',
+          cancelled_at = NOW()
+      WHERE id = ${orderId}
+    `;
 
     // Log para analytics
-    await supabase.from('events').insert({
-      user_id: order.user_id,
-      event_type: `order_${order.type}_cancelled`,
-      metadata: { orderId },
-    });
-    */
+    await sql`
+      INSERT INTO analytics_events (user_id, event_name, event_data)
+      VALUES (
+        ${userId},
+        ${`order_${order.rows[0].order_type}_cancelled`},
+        ${JSON.stringify({ orderId })}
+      )
+    `;
 
-    // Respuesta mock para desarrollo
     return NextResponse.json({
       success: true,
       message: 'Orden cancelada exitosamente',

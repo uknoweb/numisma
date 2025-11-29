@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@vercel/postgres";
 
 /**
  * API Route: Crear orden avanzada (SL/TP/Trailing)
@@ -8,68 +9,76 @@ export async function POST(request: NextRequest) {
   try {
     const order = await request.json();
 
-    const { positionId, type, triggerPrice, triggerType, percentage, trailingPercentage, status } = order;
+    const { userId, positionId, type, triggerPrice, triggerType, percentage, trailingPercentage, status } = order;
 
-    if (!positionId || !type || !status) {
+    if (!userId || !positionId || !type || !status) {
       return NextResponse.json(
         { error: 'Faltan parámetros requeridos' },
         { status: 400 }
       );
     }
 
-    // TODO: Implementar lógica de base de datos
-    /*
-    Pseudo-código para implementación con DB:
-
     // Verificar que la posición existe y está abierta
-    const { data: position } = await supabase
-      .from('positions')
-      .select('*')
-      .eq('id', positionId)
-      .eq('status', 'open')
-      .single();
+    const position = await sql`
+      SELECT * FROM positions 
+      WHERE id = ${positionId} 
+        AND user_id = ${userId}
+        AND status = 'open'
+    `;
 
-    if (!position) {
+    if (position.rows.length === 0) {
       return NextResponse.json(
         { error: 'Posición no encontrada o ya cerrada' },
         { status: 404 }
       );
     }
 
-    // Crear orden
-    const { data: newOrder, error } = await supabase
-      .from('advanced_orders')
-      .insert({
-        position_id: positionId,
-        user_id: position.user_id,
-        type,
-        trigger_price: triggerPrice,
-        trigger_type: triggerType,
-        percentage,
-        trailing_percentage: trailingPercentage,
-        highest_price: type === 'trailing_stop' ? position.current_price : null,
-        lowest_price: type === 'trailing_stop' ? position.current_price : null,
-        current_trigger_price: type === 'trailing_stop' ? triggerPrice : null,
-        status,
-        created_at: new Date(),
-      })
-      .select()
-      .single();
+    const currentPrice = position.rows[0].current_price;
 
-    if (error) throw error;
+    // Crear orden
+    const newOrder = await sql`
+      INSERT INTO advanced_orders (
+        user_id,
+        position_id,
+        order_type,
+        trigger_price,
+        trigger_type,
+        percentage,
+        trailing_percentage,
+        highest_price,
+        lowest_price,
+        current_trigger_price,
+        status
+      )
+      VALUES (
+        ${userId},
+        ${positionId},
+        ${type},
+        ${triggerPrice || null},
+        ${triggerType || 'mark'},
+        ${percentage || null},
+        ${trailingPercentage || null},
+        ${type === 'trailing_stop' ? currentPrice : null},
+        ${type === 'trailing_stop' ? currentPrice : null},
+        ${type === 'trailing_stop' ? triggerPrice : null},
+        ${status}
+      )
+      RETURNING id
+    `;
 
     // Log para analytics
-    await supabase.from('events').insert({
-      user_id: position.user_id,
-      event_type: `order_${type}_created`,
-      metadata: { orderId: newOrder.id, positionId },
-    });
-    */
+    await sql`
+      INSERT INTO analytics_events (user_id, event_name, event_data)
+      VALUES (
+        ${userId},
+        ${`order_${type}_created`},
+        ${JSON.stringify({ orderId: newOrder.rows[0].id, positionId })}
+      )
+    `;
 
-    // Respuesta mock para desarrollo
     return NextResponse.json({
       success: true,
-      orderId: Math.floor(Math.random() * 10000),
+      orderId: newOrder.rows[0].id,
       message: `Orden ${type} creada exitosamente`,
     });
 

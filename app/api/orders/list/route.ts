@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@vercel/postgres";
 
 /**
  * API Route: Obtener órdenes de una posición
@@ -16,22 +17,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Implementar consulta a base de datos
-    /*
-    const { data: orders, error } = await supabase
-      .from('advanced_orders')
-      .select('*')
-      .eq('position_id', positionId)
-      .in('status', ['active', 'pending'])
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    const orders = await sql`
+      SELECT * FROM advanced_orders
+      WHERE position_id = ${positionId}
+        AND status IN ('active', 'pending')
+      ORDER BY created_at DESC
+    `;
 
     return NextResponse.json({
-      orders: orders.map(o => ({
+      orders: orders.rows.map(o => ({
         id: o.id,
         positionId: o.position_id,
-        type: o.type,
+        type: o.order_type,
         triggerPrice: o.trigger_price,
         triggerType: o.trigger_type,
         percentage: o.percentage,
@@ -43,12 +40,6 @@ export async function GET(request: NextRequest) {
         createdAt: o.created_at,
         triggeredAt: o.triggered_at,
       })),
-    });
-    */
-
-    // Respuesta mock para desarrollo
-    return NextResponse.json({
-      orders: [],
     });
 
   } catch (error) {

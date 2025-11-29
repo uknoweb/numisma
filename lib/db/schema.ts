@@ -174,6 +174,39 @@ export const analyticsEvents = pgTable("analytics_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+/**
+ * Advanced Orders table - Órdenes avanzadas (Stop Loss, Take Profit, Trailing Stop)
+ */
+export const advancedOrders = pgTable("advanced_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  positionId: uuid("position_id").references(() => positions.id).notNull(),
+  
+  // Tipo de orden
+  orderType: varchar("order_type", { length: 30 }).notNull(), // 'stop_loss' | 'take_profit' | 'trailing_stop'
+  
+  // Precios trigger
+  triggerPrice: real("trigger_price"), // Precio que activa la orden
+  triggerType: varchar("trigger_type", { length: 20 }), // 'mark' | 'last' - tipo de precio
+  
+  // Porcentajes (para órdenes basadas en %)
+  percentage: real("percentage"), // Porcentaje de SL/TP respecto al entry price
+  trailingPercentage: real("trailing_percentage"), // Porcentaje para trailing stop
+  
+  // Trailing stop tracking
+  highestPrice: real("highest_price"), // Precio más alto alcanzado (para long)
+  lowestPrice: real("lowest_price"), // Precio más bajo alcanzado (para short)
+  currentTriggerPrice: real("current_trigger_price"), // Precio trigger actualizado
+  
+  // Estado
+  status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'triggered' | 'cancelled' | 'expired'
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  triggeredAt: timestamp("triggered_at"),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
 // Tipos TypeScript inferidos del esquema
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -198,3 +231,6 @@ export type NewReferral = typeof referrals.$inferInsert;
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+
+export type AdvancedOrder = typeof advancedOrders.$inferSelect;
+export type NewAdvancedOrder = typeof advancedOrders.$inferInsert;
