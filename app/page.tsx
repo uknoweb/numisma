@@ -3,7 +3,6 @@
 import { useAppStore } from "@/lib/store";
 import WorldIdVerification from "@/components/WorldIdVerification";
 import Dashboard from "@/components/Dashboard";
-import Plataforma from "@/components/Plataforma";
 import Staking from "@/components/Staking";
 import { Lock, Trophy, ArrowLeft } from "lucide-react";
 
@@ -23,8 +22,6 @@ export default function Home() {
     switch (currentView) {
       case "dashboard":
         return <Dashboard />;
-      case "plataforma":
-        return <Plataforma />;
       case "staking":
         return <Staking />;
       case "creditos":
