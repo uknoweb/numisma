@@ -73,48 +73,48 @@ export default function WorldIdVerification() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-black">
-      <div className="w-full max-w-md space-y-8 animate-slide-up">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+      <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Logo */}
         <div className="text-center space-y-4">
-          <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-[#FFD700] to-[#D4AF37] flex items-center justify-center shadow-lg shadow-[#FFD700]/20">
-            <Shield className="w-12 h-12 text-black" />
+          <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
+            <Shield className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-5xl font-bold text-gold-gradient">Numisma</h1>
-          <p className="text-gray-400">Plataforma educativa de trading</p>
+          <h1 className="text-5xl font-bold text-gray-900">Numisma</h1>
+          <p className="text-gray-600">Plataforma educativa de trading</p>
         </div>
 
         {/* Card */}
-        <div className="card-premium p-6 space-y-6">
+        <div className="card-modern p-8 space-y-6">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-[#FFD700]">
+            <h3 className="text-lg font-semibold text-gray-900">
               🔐 Verificación Exclusiva
             </h3>
-            <p className="text-sm text-gray-300 leading-relaxed">
-              El acceso a <span className="text-[#FFD700] font-semibold">Numisma</span> es exclusivo para usuarios verificados con{" "}
-              <span className="text-white font-semibold">World ID</span>. Esto garantiza que todos los participantes son personas únicas.
+            <p className="text-sm text-gray-600 leading-relaxed">
+              El acceso a <span className="text-indigo-600 font-semibold">Numisma</span> es exclusivo para usuarios verificados con{" "}
+              <span className="text-gray-900 font-semibold">World ID</span>. Esto garantiza que todos los participantes son personas únicas.
             </p>
           </div>
 
-          <div className="bg-[#151515] rounded-xl p-4 space-y-3 border border-[#FFD700]/10">
+          <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-              <span className="text-sm text-gray-200">Seguridad garantizada</span>
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-sm text-gray-700">Seguridad garantizada</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-              <span className="text-sm text-gray-200">Smart Contracts blindados</span>
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-sm text-gray-700">Smart Contracts blindados</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-              <span className="text-sm text-gray-200">World Chain powered</span>
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-sm text-gray-700">World Chain powered</span>
             </div>
           </div>
 
           <button
             onClick={handleVerify}
             disabled={isVerifying}
-            className="btn-gold w-full h-14 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50"
+            className="btn-primary w-full h-14 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {isVerifying ? (
               <>
@@ -130,8 +130,8 @@ export default function WorldIdVerification() {
           </button>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 

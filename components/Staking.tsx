@@ -35,6 +35,9 @@ export default function Staking() {
   const [pioneerAmount, setPioneerAmount] = useState("50");
   const [showMembershipSection, setShowMembershipSection] = useState(false);
   const [showPioneerSection, setShowPioneerSection] = useState(false);
+  const [acceptedPioneerTerms, setAcceptedPioneerTerms] = useState(false);
+  const [showPioneerConfirmation, setShowPioneerConfirmation] = useState(false);
+  const [showWithdrawConfirmation, setShowWithdrawConfirmation] = useState(false);
 
   if (!user) return null;
 
@@ -96,6 +99,11 @@ export default function Staking() {
       return;
     }
 
+    // Mostrar confirmación con términos
+    setShowPioneerConfirmation(true);
+  };
+
+  const confirmBecomePioneer = () => {
     const newPioneer: any = {
       userId: user.id,
       walletAddress: "0x...",
@@ -117,6 +125,8 @@ export default function Staking() {
     );
     updateBalance(user.balanceNuma, user.balanceWld - pioneerNum);
     setPioneerAmount("50");
+    setAcceptedPioneerTerms(false);
+    setShowPioneerConfirmation(false);
     alert(`✅ Ahora eres pionero #${newPioneer.rank}`);
   };
 
@@ -147,6 +157,31 @@ export default function Staking() {
     updateBalance(user.balanceNuma, user.balanceWld - pioneerNum);
     setPioneerAmount("50");
     alert("✅ Capital agregado exitosamente");
+  };
+
+  const handleWithdrawPioneer = () => {
+    setShowWithdrawConfirmation(true);
+  };
+
+  const confirmWithdrawPioneer = () => {
+    if (!currentUserPioneer) return;
+    
+    const capitalLocked = (currentUserPioneer as any).capitalLocked;
+    const penalty = capitalLocked * 0.20; // 20% penalización
+    const amountToReturn = capitalLocked - penalty;
+
+    // Remover de pioneros
+    const updatedPioneers = pioneers
+      .filter((p: any) => p.userId !== user.id)
+      .sort((a: any, b: any) => b.capitalLocked - a.capitalLocked)
+      .map((p: any, index: number) => ({ ...p, rank: index + 1 }));
+
+    setPioneers(updatedPioneers);
+    setCurrentUserPioneer(null);
+    updateBalance(user.balanceNuma, user.balanceWld + amountToReturn);
+    setShowWithdrawConfirmation(false);
+    
+    alert(`⚠️ Has retirado tu capital con penalización del 20%\nRecibiste: ${formatNumber(amountToReturn, 2)} WLD\nPenalización: ${formatNumber(penalty, 2)} WLD`);
   };
 
   return (
@@ -356,6 +391,16 @@ export default function Staking() {
               >
                 {currentUserPioneer ? "Agregar Capital" : "Convertirme en Pionero"}
               </button>
+
+              {/* Botón de Retirar */}
+              {currentUserPioneer && (
+                <button
+                  onClick={handleWithdrawPioneer}
+                  className="w-full py-3 rounded-xl font-bold border-2 border-red-500 text-red-600 hover:bg-red-50 transition-all"
+                >
+                  Retirar Capital (20% penalización)
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -400,6 +445,138 @@ export default function Staking() {
         )}
 
       </div>
+
+      {/* Modal de Confirmación - Convertirse en Pionero */}
+      {showPioneerConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-modern max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-gray-900">⚠️ Términos y Condiciones del Sistema de Pioneros</h3>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-3 text-sm text-gray-700">
+              <p><strong>Capital a bloquear:</strong> {formatNumber(pioneerNum, 2)} WLD</p>
+              <p><strong>Período de bloqueo:</strong> 1 año (365 días)</p>
+              <p><strong>Ranking inicial estimado:</strong> #{pioneers.length + 1}</p>
+              
+              <hr className="border-yellow-300" />
+              
+              <div className="space-y-2">
+                <p className="font-bold text-gray-900">📋 Condiciones del sistema:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>Tu capital quedará bloqueado por 1 año completo</li>
+                  <li>Acceso a créditos solo para Top 100 pioneros</li>
+                  <li>Ranking basado en capital bloqueado (mayor = mejor)</li>
+                  <li>Participación en el 5% de ganancias de la plataforma</li>
+                  <li>Pagos cada 15 días si estás en Top 100</li>
+                </ul>
+              </div>
+
+              <hr className="border-yellow-300" />
+              
+              <div className="space-y-2">
+                <p className="font-bold text-red-600">⚠️ Penalizaciones:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li><strong>Retiro anticipado: 20% de penalización</strong></li>
+                  <li>Al retirar, pierdes acceso permanente a créditos</li>
+                  <li>No podrás volver a inscribirte como pionero</li>
+                  <li>Perderás tu posición en el ranking</li>
+                </ul>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedPioneerTerms}
+                onChange={(e) => setAcceptedPioneerTerms(e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+              />
+              <span className="text-sm text-gray-700">
+                He leído y acepto los términos y condiciones del Sistema de Pioneros
+              </span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  setShowPioneerConfirmation(false);
+                  setAcceptedPioneerTerms(false);
+                }}
+                className="py-3 rounded-xl font-bold border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmBecomePioneer}
+                disabled={!acceptedPioneerTerms}
+                className={`py-3 rounded-xl font-bold transition-all ${
+                  acceptedPioneerTerms
+                    ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:opacity-90"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Confirmar y Bloquear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación - Retirar Capital */}
+      {showWithdrawConfirmation && currentUserPioneer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-modern max-w-lg w-full p-6 space-y-4">
+            <h3 className="text-xl font-bold text-red-600">⚠️ Confirmación de Retiro</h3>
+            
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3 text-sm text-gray-700">
+              <p className="font-bold text-gray-900">Estás a punto de retirar tu capital bloqueado:</p>
+              
+              <div className="space-y-2 bg-white rounded-lg p-3">
+                <div className="flex justify-between">
+                  <span>Capital bloqueado:</span>
+                  <span className="font-bold">{formatNumber((currentUserPioneer as any).capitalLocked, 2)} WLD</span>
+                </div>
+                <div className="flex justify-between text-red-600">
+                  <span>Penalización (20%):</span>
+                  <span className="font-bold">-{formatNumber((currentUserPioneer as any).capitalLocked * 0.20, 2)} WLD</span>
+                </div>
+                <hr />
+                <div className="flex justify-between text-lg">
+                  <span className="font-bold">Recibirás:</span>
+                  <span className="font-bold text-green-600">
+                    {formatNumber((currentUserPioneer as any).capitalLocked * 0.80, 2)} WLD
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-red-100 rounded-lg p-3 space-y-1 text-xs">
+                <p className="font-bold text-red-800">❌ Perderás permanentemente:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Acceso al sistema de créditos</li>
+                  <li>Tu posición #{currentUserPioneer.rank} en el ranking</li>
+                  <li>Participación en ganancias de la plataforma</li>
+                  <li>Posibilidad de volver a inscribirte como pionero</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowWithdrawConfirmation(false)}
+                className="py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all"
+              >
+                Mantener Capital
+              </button>
+              <button
+                onClick={confirmWithdrawPioneer}
+                className="py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 transition-all"
+              >
+                Confirmar Retiro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

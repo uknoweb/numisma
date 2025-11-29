@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import WorldIdVerification from "@/components/WorldIdVerification";
 import Dashboard from "@/components/Dashboard";
 import Staking from "@/components/Staking";
+import Trading from "@/components/Trading";
 import { Lock, Trophy, ArrowLeft } from "lucide-react";
 
 export default function Home() {
@@ -22,6 +23,8 @@ export default function Home() {
     switch (currentView) {
       case "dashboard":
         return <Dashboard />;
+      case "trading":
+        return <Trading />;
       case "staking":
         return <Staking />;
       case "creditos":

@@ -40,9 +40,9 @@ interface AppState {
   repayLoan: (loanId: string) => void;
   
   // UI State
-  currentView: "verify" | "dashboard" | "plataforma" | "staking" | "creditos";
+  currentView: "verify" | "dashboard" | "trading" | "staking" | "creditos";
   setCurrentView: (
-    view: "verify" | "dashboard" | "plataforma" | "staking" | "creditos"
+    view: "verify" | "dashboard" | "trading" | "staking" | "creditos"
   ) => void;
   
   // Último reclamo de recompensa

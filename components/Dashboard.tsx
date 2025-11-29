@@ -10,6 +10,7 @@ import {
   TrendingUp,
   ArrowRight,
   Trophy,
+  CandlestickChart,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -186,6 +187,25 @@ export default function Dashboard() {
 
         {/* Main Actions */}
         <div className="grid grid-cols-1 gap-4">
+          {/* Trading */}
+          <button
+            onClick={() => setCurrentView("trading")}
+            className="card-modern p-6 hover:shadow-md transition-all text-left group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <CandlestickChart className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 mb-1">Trading de Futuros</h3>
+                  <p className="text-sm text-gray-500">Opera WLD/USDT y NUMA/WLD con apalancamiento</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
+
           {/* Staking */}
           <button
             onClick={() => setCurrentView("staking")}
