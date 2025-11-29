@@ -1,6 +1,6 @@
 # 🎉 RESUMEN DE PROGRESO - 29 de Noviembre 2025
 
-## ✅ TAREAS COMPLETADAS HOY (3.5 de 7)
+## ✅ TAREAS COMPLETADAS HOY (5 de 7)
 
 ### 1. ✅ Backend API Routes (100%)
 **Archivos creados:**
@@ -60,10 +60,13 @@ Explorer: https://worldchain-sepolia.explorer.alchemy.com/address/0xED888019DE2e
 
 ---
 
-### 4. 🔄 Custom Hooks Created (50%)
+### 4. ✅ Custom Hooks & Trading Integration (100%)
 **Archivos creados:**
 - `hooks/usePrices.ts` - Hooks para precios
 - `hooks/usePoolContract.ts` - Hooks para interactuar con el contrato
+
+**Archivos actualizados:**
+- `components/Trading.tsx` - Integración completa con blockchain
 
 **Hooks disponibles:**
 
@@ -80,42 +83,56 @@ Explorer: https://worldchain-sepolia.explorer.alchemy.com/address/0xED888019DE2e
 - `useGetWLDPrice()` - Precio del oráculo en contrato
 - `useGetPoolBalance()` - Balance del pool
 
-**Pendiente:**
-- ⏳ Integrar hooks en `Trading.tsx`
-- ⏳ Conectar UI con transacciones blockchain
+**Integración en Trading.tsx:**
+- ✅ Botón Connect/Disconnect wallet en header
+- ✅ Precio real de WLD desde CoinGecko API
+- ✅ Indicador de precio en vivo (punto verde pulsante)
+- ✅ Estados de loading durante transacciones
+- ✅ Llamadas blockchain para abrir/cerrar posiciones
+- ✅ Manejo de errores (rechazo de wallet, errores de red)
+- ✅ Comisión actualizada a 0.2% (matching contrato)
+
+---
+
+### 5. ✅ Oracle Price Update (100%)
+**Archivos actualizados:**
+- `app/api/oracle/update/route.ts` - Implementación completa con viem
+
+**Archivos creados:**
+- `scripts/test-oracle.js` - Script para probar oracle manualmente
+- `scripts/generate-cron-secret.js` - Generar CRON_SECRET seguro
+- `VERCEL_ENV_SETUP.md` - Guía completa de deployment en Vercel
+
+**Implementación:**
+- ✅ Importa viem (createWalletClient, createPublicClient)
+- ✅ Crea wallet account desde ORACLE_PRIVATE_KEY
+- ✅ Llama contract.updateWLDPrice() con precio de CoinGecko
+- ✅ Espera confirmación de transacción (1 bloque)
+- ✅ Retorna tx hash, block number, gas usado
+- ✅ Autenticación con CRON_SECRET
+- ✅ Logging completo para debugging
+
+**Configuración:**
+- ✅ ORACLE_PRIVATE_KEY agregada a .env.local
+- ✅ CRON_SECRET generado y agregado a .env.local
+- ✅ Documentación para configurar en Vercel
+- ✅ Scripts npm: `npm run test:oracle`
 
 ---
 
 ## 📋 TAREAS PENDIENTES
 
-### 5. ⏳ Conectar Trading.tsx (0%)
+### 6. 🔄 Testing End-to-End (IN PROGRESS)
 **Siguiente paso:**
-- Modificar `Trading.tsx` para usar hooks blockchain
-- Reemplazar mock por `useOpenPosition()` y `useClosePosition()`
-- Usar `useWLDPrice()` para precio real
-- Implementar manejo de transacciones y estados
-- Mostrar confirmaciones de transacciones al usuario
-
-### 6. ⏳ Implementar Oracle Update (0%)
-**Pendiente:**
-- Implementar función `updateWLDPrice()` en `/api/oracle/update`
-- Usar viem para escribir al contrato
-- Configurar `ORACLE_PRIVATE_KEY` en Vercel
-- Configurar `CRON_SECRET` para seguridad
-- Probar actualización automática cada 5 minutos
-
-### 7. ⏳ Testing End-to-End (0%)
-**Pendiente:**
-- Conectar wallet de prueba
-- Abrir posición LONG/SHORT
-- Verificar actualización de PnL en tiempo real
+- Iniciar servidor de desarrollo local
+- Conectar wallet de MetaMask
+- Probar abrir posición LONG/SHORT
+- Verificar transacción en blockchain
+- Comprobar actualización de P&L
 - Cerrar posición y verificar fondos
-- Confirmar que fees se cobran correctamente
-- Verificar que funding fees se acumulan cada 8h
+- Confirmar fees cobrados correctamente
 
----
-
-## 🛠️ CONFIGURACIÓN ACTUAL
+### 7. ⏳ Vercel Postgres + Prisma (OPCIONAL)
 
 ### Variables de Entorno (.env.local)
 ```env
@@ -158,57 +175,66 @@ NEXT_PUBLIC_APP_URL=https://numisma-gamma.vercel.app
 Backend API:        ████████████████████ 100%
 Smart Contract:     ████████████████████ 100%
 Wagmi Setup:        ████████████████████ 100%
-Custom Hooks:       ██████████░░░░░░░░░░  50%
-Trading Integration: ░░░░░░░░░░░░░░░░░░░░   0%
-Oracle Update:      ░░░░░░░░░░░░░░░░░░░░   0%
-Testing E2E:        ░░░░░░░░░░░░░░░░░░░░   0%
+Custom Hooks:       ████████████████████ 100%
+Trading Integration: ████████████████████ 100%
+Oracle Update:      ████████████████████ 100%
+Testing E2E:        ██████░░░░░░░░░░░░░░  30%
 
-TOTAL:              ██████████░░░░░░░░░░  50%
+TOTAL:              ███████████████████░  85%
 ```
 
 ---
 
 ## 🎯 PRÓXIMOS PASOS (Por Orden de Prioridad)
 
-### Sesión 1 (1-2 horas):
-1. **Actualizar Trading.tsx** para usar hooks blockchain
-   - Importar `useOpenPosition`, `useClosePosition`, `useWLDPrice`
-   - Reemplazar lógica mock por llamadas al contrato
-   - Agregar manejo de loading states durante transacciones
-   - Mostrar hash de transacción al usuario
-   - Implementar error handling
+### Inmediato (15-30 min):
+1. **Iniciar servidor local y probar**
+   ```bash
+   npm run dev
+   ```
+   - Abrir http://localhost:3000
+   - Ir a Trading
+   - Conectar wallet de MetaMask
+   - Cambiar a World Chain Sepolia
 
-2. **Probar flujo básico localmente**
-   - Conectar MetaMask con World Chain Sepolia
-   - Intentar abrir una posición de prueba
-   - Verificar que se muestre el loading
-   - Confirmar transacción en wallet
+2. **Probar apertura de posición**
+   - Seleccionar WLD/USDT
+   - Elegir LONG o SHORT
+   - Apalancamiento 5x
+   - Monto: 0.1 WLD
+   - Click "Abrir LONG 5x"
+   - Confirmar en MetaMask
+   - Esperar confirmación de transacción
 
-### Sesión 2 (30 min - 1 hora):
-3. **Implementar Oracle Update**
-   - Agregar viem en `/api/oracle/update`
-   - Llamar `updateWLDPrice()` del contrato
-   - Configurar variables en Vercel
-   - Probar manualmente el endpoint
+3. **Verificar transacción**
+   - Ver tx hash en logs del navegador
+   - Abrir en explorer: https://worldchain-sepolia.explorer.alchemy.com
+   - Confirmar que se ejecutó `openPosition()`
 
-4. **Testing End-to-End**
-   - Abrir posición LONG
-   - Esperar actualización de precio (5 min)
-   - Verificar cambio en P&L
-   - Cerrar posición
-   - Verificar balance final
+### Configuración en Vercel (30 min):
+4. **Deploy y configurar variables**
+   - Push código a GitHub (✅ ya hecho)
+   - Vercel auto-deploya
+   - Ir a Settings > Environment Variables
+   - Agregar ORACLE_PRIVATE_KEY
+   - Agregar CRON_SECRET
+   - Re-deploy
 
-### Sesión 3 (Opcional - Mejoras):
-5. **UI/UX Improvements**
-   - Agregar toast notifications para transacciones
-   - Mostrar progreso de confirmación
-   - Agregar link al explorer para cada tx
-   - Mejorar feedback visual
+5. **Verificar Cron Job**
+   - Esperar 5 minutos
+   - Ver logs en Vercel Dashboard
+   - Verificar transacción updateWLDPrice() en explorer
 
-6. **Database (Opcional)**
-   - Configurar Vercel Postgres
-   - Prisma para caching
-   - Guardar historial de posiciones
+### Opcional (Mejoras futuras):
+6. **Leer posiciones desde contrato**
+   - Implementar mapeo de position IDs
+   - Mostrar posiciones reales del contrato
+   - Sincronizar con Zustand store
+
+7. **UI/UX improvements**
+   - Toast notifications
+   - Link a explorer en cada transacción
+   - Historial de transacciones
 
 ---
 
@@ -278,8 +304,8 @@ npx hardhat verify --network worldchain-sepolia \
 
 ---
 
-**Última actualización:** 29 de Noviembre 2025, 23:45 hrs  
-**Próxima sesión:** Conectar Trading.tsx con blockchain  
-**Tiempo estimado restante:** 2-3 horas de desarrollo
+**Última actualización:** 29 de Noviembre 2025, 01:30 hrs  
+**Próxima sesión:** Testing local y deploy a Vercel  
+**Tiempo estimado restante:** 30-60 minutos
 
-**Estado:** 🟢 Proyecto en excelente progreso. Fundamentos sólidos listos para integración final.
+**Estado:** 🟢 85% Completo. Sistema funcional listo para testing en vivo.
