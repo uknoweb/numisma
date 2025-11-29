@@ -1,0 +1,23 @@
+{
+  "network": "worldchain-sepolia",
+  "contractAddress": "0x526b22e2878334240aDdB9c13b42d848a783cc09",
+  "deployer": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "wldTokenAddress": "0x25f36A04387aA3E68d8eD41Cd4478BEd7422A9f4",
+  "treasuryAddress": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "tiers": {
+    "free": {
+      "leverage": 5,
+      "price": "0"
+    },
+    "plus": {
+      "leverage": 50,
+      "price": "5000000000000000000"
+    },
+    "vip": {
+      "leverage": 500,
+      "price": "15000000000000000000"
+    }
+  },
+  "deployedAt": "2025-11-29T17:41:33.405Z",
+  "blockNumber": 21945334
+}

@@ -15,7 +15,24 @@ import { formatNumber, calculatePnL } from "@/lib/utils";
 import { useWLDPrice, useNUMAPrice } from "@/hooks/usePrices";
 import { useOpenPosition, useClosePosition, useGetCurrentPnL } from "@/hooks/usePoolContract";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { TradingPair, PositionType } from "@/lib/contracts";
+import { TradingPair, PositionType, POOL_CONTRACT_ADDRESS } from "@/lib/contracts";
+import { 
+  useNUMABalance, 
+  useWLDBalance, 
+  useApproveNUMA, 
+  useApproveWLD,
+  useNUMAAllowance,
+  useWLDAllowance 
+} from "@/hooks/useTokens";
+import { 
+  useDepositNUMA, 
+  useDepositWLD, 
+  useWithdrawNUMA, 
+  useWithdrawWLD,
+  useTraderBalanceNUMA,
+  useTraderBalanceWLD,
+  usePoolLiquidity
+} from "@/hooks/usePoolDeposits";
 
 type MarketPair = "WLD/USDT" | "NUMA/WLD";
 type Direction = "long" | "short";
@@ -34,6 +51,9 @@ export default function Trading() {
   const [amount, setAmount] = useState("");
   const [showGuide, setShowGuide] = useState(false);
   const [timeframe, setTimeframe] = useState<"1s" | "1m" | "5m" | "15m">("1s");
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositToken, setDepositToken] = useState<"NUMA" | "WLD">("NUMA");
   
   // Blockchain hooks
   const { address, isConnected } = useAccount();
@@ -43,6 +63,31 @@ export default function Trading() {
   const { price: numaPrice } = useNUMAPrice();
   const { openPosition, isPending: isOpeningPosition, isConfirming: isConfirmingOpen } = useOpenPosition();
   const { closePosition: closePositionOnChain, isPending: isClosingPosition, isConfirming: isConfirmingClose } = useClosePosition();
+  
+  // Token balances (wallet)
+  const { balance: numaWalletBalance, isLoading: numaBalanceLoading } = useNUMABalance(address);
+  const { balance: wldWalletBalance, isLoading: wldBalanceLoading } = useWLDBalance(address);
+  
+  // Pool balances (trader deposits)
+  const { balance: numaPoolBalance } = useTraderBalanceNUMA(address);
+  const { balance: wldPoolBalance } = useTraderBalanceWLD(address);
+  
+  // Allowances
+  const { allowance: numaAllowance } = useNUMAAllowance(address, POOL_CONTRACT_ADDRESS);
+  const { allowance: wldAllowance } = useWLDAllowance(address, POOL_CONTRACT_ADDRESS);
+  
+  // Pool liquidity
+  const { numaLiquidity, wldLiquidity } = usePoolLiquidity();
+  
+  // Approve hooks
+  const { approve: approveNUMA, isPending: isApprovingNUMA, isSuccess: numaApproved } = useApproveNUMA(POOL_CONTRACT_ADDRESS);
+  const { approve: approveWLD, isPending: isApprovingWLD, isSuccess: wldApproved } = useApproveWLD(POOL_CONTRACT_ADDRESS);
+  
+  // Deposit/Withdraw hooks
+  const { deposit: depositNUMA, isPending: isDepositingNUMA, isSuccess: numaDeposited } = useDepositNUMA();
+  const { deposit: depositWLD, isPending: isDepositingWLD, isSuccess: wldDeposited } = useDepositWLD();
+  const { withdraw: withdrawNUMA, isPending: isWithdrawingNUMA } = useWithdrawNUMA();
+  const { withdraw: withdrawWLD, isPending: isWithdrawingWLD } = useWithdrawWLD();
   
   // Historial de precios para la gráfica según temporalidad
   const [wldPriceHistory, setWldPriceHistory] = useState<number[]>(() => {
@@ -298,6 +343,221 @@ export default function Trading() {
             </button>
           )}
         </div>
+
+        {/* Balances y Gestión de Fondos */}
+        {isConnected && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Balance Wallet */}
+            <div className="card-modern p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                Wallet Balance
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">NUMA:</span>
+                  <span className="font-bold text-gray-900">
+                    {numaBalanceLoading ? "..." : formatNumber(parseFloat(numaWalletBalance), 2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">WLD:</span>
+                  <span className="font-bold text-gray-900">
+                    {wldBalanceLoading ? "..." : formatNumber(parseFloat(wldWalletBalance), 2)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDepositModal(true)}
+                className="w-full mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all text-sm"
+              >
+                Depositar al Pool
+              </button>
+            </div>
+
+            {/* Balance en Pool */}
+            <div className="card-modern p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Balance en Pool (Trading)
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">NUMA:</span>
+                  <span className="font-bold text-green-700">
+                    {formatNumber(parseFloat(numaPoolBalance), 2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">WLD:</span>
+                  <span className="font-bold text-green-700">
+                    {formatNumber(parseFloat(wldPoolBalance), 2)}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    if (parseFloat(numaPoolBalance) > 0) {
+                      withdrawNUMA(numaPoolBalance);
+                    }
+                  }}
+                  disabled={parseFloat(numaPoolBalance) === 0 || isWithdrawingNUMA}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isWithdrawingNUMA ? "..." : "Retirar NUMA"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (parseFloat(wldPoolBalance) > 0) {
+                      withdrawWLD(wldPoolBalance);
+                    }
+                  }}
+                  disabled={parseFloat(wldPoolBalance) === 0 || isWithdrawingWLD}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isWithdrawingWLD ? "..." : "Retirar WLD"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Depósito */}
+        {showDepositModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="card-modern p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Depositar al Pool</h3>
+              
+              <div className="space-y-4">
+                {/* Selector de Token */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Token:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setDepositToken("NUMA")}
+                      className={`px-4 py-3 rounded-lg font-bold transition-all ${
+                        depositToken === "NUMA"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      NUMA
+                    </button>
+                    <button
+                      onClick={() => setDepositToken("WLD")}
+                      className={`px-4 py-3 rounded-lg font-bold transition-all ${
+                        depositToken === "WLD"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      WLD
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cantidad:
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      onClick={() => {
+                        const maxBalance = depositToken === "NUMA" ? numaWalletBalance : wldWalletBalance;
+                        setDepositAmount(maxBalance);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-bold text-gray-700"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Disponible: {depositToken === "NUMA" 
+                      ? formatNumber(parseFloat(numaWalletBalance), 2) 
+                      : formatNumber(parseFloat(wldWalletBalance), 2)} {depositToken}
+                  </div>
+                </div>
+
+                {/* Allowance Info */}
+                {depositToken === "NUMA" && parseFloat(numaAllowance) < parseFloat(depositAmount || "0") && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="text-xs text-yellow-700 font-medium">
+                      ⚠️ Primero debes aprobar el pool para gastar tus NUMA
+                    </div>
+                  </div>
+                )}
+                {depositToken === "WLD" && parseFloat(wldAllowance) < parseFloat(depositAmount || "0") && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="text-xs text-yellow-700 font-medium">
+                      ⚠️ Primero debes aprobar el pool para gastar tus WLD
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  {depositToken === "NUMA" && parseFloat(numaAllowance) < parseFloat(depositAmount || "0") ? (
+                    <button
+                      onClick={() => {
+                        if (depositAmount) approveNUMA(depositAmount);
+                      }}
+                      disabled={!depositAmount || isApprovingNUMA}
+                      className="col-span-2 px-4 py-3 bg-yellow-500 text-white rounded-lg font-bold hover:bg-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isApprovingNUMA ? "Aprobando..." : "Aprobar NUMA"}
+                    </button>
+                  ) : depositToken === "WLD" && parseFloat(wldAllowance) < parseFloat(depositAmount || "0") ? (
+                    <button
+                      onClick={() => {
+                        if (depositAmount) approveWLD(depositAmount);
+                      }}
+                      disabled={!depositAmount || isApprovingWLD}
+                      className="col-span-2 px-4 py-3 bg-yellow-500 text-white rounded-lg font-bold hover:bg-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isApprovingWLD ? "Aprobando..." : "Aprobar WLD"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (depositAmount) {
+                          if (depositToken === "NUMA") {
+                            depositNUMA(depositAmount);
+                          } else {
+                            depositWLD(depositAmount);
+                          }
+                          setShowDepositModal(false);
+                          setDepositAmount("");
+                        }
+                      }}
+                      disabled={!depositAmount || isDepositingNUMA || isDepositingWLD}
+                      className="col-span-2 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDepositingNUMA || isDepositingWLD ? "Depositando..." : `Depositar ${depositToken}`}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDepositModal(false);
+                      setDepositAmount("");
+                    }}
+                    className="col-span-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Selector de Par */}
         <div className="card-modern p-4">

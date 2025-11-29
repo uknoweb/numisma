@@ -1,10 +1,14 @@
-import PoolABI from './PoolABI.json'
+import PoolV2ABI from './pool-v2-abi.json'
 
-// Dirección del contrato deployado
+// Dirección del contrato deployado (Pool V2 con tokens)
 export const POOL_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS as `0x${string}`
 
-// ABI del contrato
-export const POOL_ABI = PoolABI as const
+// Token addresses
+export const NUMA_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_NUMA_TOKEN_ADDRESS as `0x${string}`
+export const WLD_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_WLD_TOKEN_ADDRESS as `0x${string}`
+
+// ABI del contrato Pool V2
+export const POOL_ABI = PoolV2ABI
 
 // Configuración del contrato para Wagmi
 export const poolContract = {

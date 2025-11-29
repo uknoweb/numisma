@@ -1,0 +1,14 @@
+{
+  "network": "worldchain-sepolia",
+  "contractAddress": "0x25f36A04387aA3E68d8eD41Cd4478BEd7422A9f4",
+  "deployer": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "name": "Worldcoin (Mock)",
+  "symbol": "WLD",
+  "decimals": 18,
+  "totalSupply": "10000000000000000000000000000",
+  "deployerBalance": "10000000000000000000000000000",
+  "deployedAt": "2025-11-29T17:28:35.341Z",
+  "blockNumber": 21944945,
+  "isMock": true,
+  "note": "This is a MOCK token for testing only. DO NOT use in mainnet."
+}
