@@ -14,8 +14,10 @@ import {
   CandlestickChart,
   X,
   History,
+  Crown,
 } from "lucide-react";
 import Image from "next/image";
+import MembershipPayment from "./MembershipPayment";
 
 export default function Dashboard() {
   const user = useAppStore((state) => state.user);
@@ -25,6 +27,7 @@ export default function Dashboard() {
   const transactions = useAppStore((state) => state.transactions);
   
   const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
   const [selectedToken, setSelectedToken] = useState<"NUMA" | "WLD" | "ALL">("ALL");
 
   if (!user) return null;
@@ -144,7 +147,18 @@ export default function Dashboard() {
 
         {/* Membership Info */}
         <div className="card-modern p-6">
-          <div className="text-sm text-gray-500 font-medium mb-4">Tu Membresía</div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-gray-500 font-medium">Tu Membresía</div>
+            {user.membership.tier !== "vip" && (
+              <button
+                onClick={() => setShowMembershipModal(true)}
+                className="text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-1"
+              >
+                <Crown className="w-3 h-3" />
+                Mejorar
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
@@ -418,6 +432,34 @@ export default function Dashboard() {
               >
                 Cerrar
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Membership Modal */}
+      {showMembershipModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Membresías Premium
+              </h2>
+              <button
+                onClick={() => setShowMembershipModal(false)}
+                className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <MembershipPayment />
             </div>
 
           </div>

@@ -183,43 +183,67 @@ export async function sendTransaction(params: {
 // }
 
 /**
- * Obtener información de pago (para compras de membresías)
- * NOTA: Implementar cuando se active sistema de pagos real
+ * Solicitar pago con MiniKit Pay
+ * Procesa pagos en WLD a través de World App
  */
-// export async function requestPayment(params: {
-//   to: `0x${string}`;
-//   value: string; // en WLD (ether)
-//   description: string;
-// }) {
-//   try {
-//     const { finalPayload } = await MiniKit.commandsAsync.pay({
-//       reference: `payment_${Date.now()}`,
-//       to: params.to,
-//       tokens: [
-//         {
-//           symbol: 'WLD',
-//           token_amount: params.value,
-//         },
-//       ],
-//       description: params.description,
-//     });
-// 
-//     if (!finalPayload || finalPayload.status === 'error') {
-//       return {
-//         success: false,
-//         error: 'Payment failed or was cancelled',
-//       };
-//     }
-// 
-//     return {
-//       success: true,
-//       transactionId: finalPayload.transaction_id,
-//     };
-//   } catch (error) {
-//     console.error('Payment error:', error);
-//     return {
-//       success: false,
-//       error: error instanceof Error ? error.message : 'Unknown error',
-//     };
-//   }
-// }
+export async function requestPayment(params: {
+  to: `0x${string}`;
+  value: string; // en WLD (ether)
+  description: string;
+  reference?: string;
+}): Promise<{
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+}> {
+  try {
+    const reference = params.reference || `payment_${Date.now()}`;
+    
+    const { finalPayload } = await MiniKit.commandsAsync.pay({
+      reference,
+      to: params.to,
+      tokens: [
+        {
+          symbol: 'WLD',
+          token_amount: params.value,
+        },
+      ],
+      description: params.description,
+    });
+
+    if (!finalPayload || finalPayload.status === 'error') {
+      return {
+        success: false,
+        error: 'Payment failed or was cancelled',
+      };
+    }
+
+    return {
+      success: true,
+      transactionId: finalPayload.transaction_id,
+    };
+  } catch (error) {
+    console.error('Payment error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Copiar al clipboard (útil para compartir referidos)
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    // Fallback a navigator.clipboard si MiniKit no está disponible
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Copy to clipboard error:', error);
+    return false;
+  }
+}
