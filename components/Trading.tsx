@@ -70,38 +70,36 @@ export default function Trading() {
 
   // Actualizar P&L de posiciones y cerrar automáticamente si balance < 0.1
   useEffect(() => {
-    if (!user) return; // Validar que user exista
+    if (!user) return;
     
-    positions.filter(p => p.status === "open").forEach(position => {
-      const currentMarketPrice = position.symbol === "NUMA/WLD" ? numaPrice : wldPrice;
-      const { pnl } = calculatePnL(
-        position.entryPrice,
-        currentMarketPrice,
-        position.amount,
-        position.leverage,
-        position.type === "long",
-        position.symbol
-      );
+    const checkPositions = () => {
+      positions.filter(p => p.status === "open").forEach(position => {
+        try {
+          const currentMarketPrice = position.symbol === "NUMA/WLD" ? numaPrice : wldPrice;
+          const { pnl } = calculatePnL(
+            position.entryPrice,
+            currentMarketPrice,
+            position.amount,
+            position.leverage,
+            position.type === "long",
+            position.symbol
+          );
 
-      // Calcular balance actual después del P&L
-      const currentBalance = position.symbol === "WLD/USDT" 
-        ? user.balanceWld + pnl
-        : user.balanceNuma + pnl;
+          const currentBalance = position.symbol === "WLD/USDT" 
+            ? user.balanceWld + pnl
+            : user.balanceNuma + pnl;
 
-      // Cerrar automáticamente si balance < 0.1
-      if (currentBalance < 0.1) {
-        closePosition(position.id);
-        alert(`⚠️ Posición #${position.id.slice(-4)} cerrada automáticamente\nBalance insuficiente (< 0.1 ${position.symbol === "WLD/USDT" ? "WLD" : "NUMA"})`);
-      } else {
-        // Actualizar P&L normal
-        useAppStore.setState((state) => ({
-          positions: state.positions.map((p) =>
-            p.id === position.id ? { ...p, pnl, currentPrice: currentMarketPrice } : p
-          ),
-        }));
-      }
-    });
-  }, [wldPrice, numaPrice, positions, user?.balanceWld, user?.balanceNuma, closePosition]);
+          if (currentBalance < 0.1) {
+            closePosition(position.id);
+          }
+        } catch (error) {
+          console.error('Error checking position:', error);
+        }
+      });
+    };
+    
+    checkPositions();
+  }, [wldPrice, numaPrice]);
 
   // Validar que el usuario exista
   if (!user) return null;

@@ -25,31 +25,7 @@ export default function Home() {
       case "dashboard":
         return <Dashboard />;
       case "trading":
-        return (
-          <ErrorBoundary
-            fallback={
-              <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-                <div className="card-modern p-8 max-w-md w-full text-center space-y-4">
-                  <div className="text-6xl">📊</div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Error en Trading
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    No se pudo cargar el módulo de trading. Por favor, intenta nuevamente.
-                  </p>
-                  <button
-                    onClick={() => setCurrentView("dashboard")}
-                    className="btn-primary w-full"
-                  >
-                    Volver al Dashboard
-                  </button>
-                </div>
-              </div>
-            }
-          >
-            <Trading />
-          </ErrorBoundary>
-        );
+        return <Trading />;
       case "staking":
         return <Staking />;
       case "creditos":
