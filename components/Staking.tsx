@@ -128,20 +128,41 @@ export default function Staking() {
   };
 
   const handleBuyMembershipClick = () => {
-    const price = MEMBERSHIP_PRICES[selectedMembership];
-    if (user.balanceWld < price) {
-      alert(`❌ Necesitas ${price} WLD para comprar ${selectedMembership.toUpperCase()}`);
+    const cost = selectedMembership === "plus" ? 10 : 90;
+    if (user.balanceNuma < cost) {
+      alert(`❌ Necesitas ${cost} NUMA para comprar ${selectedMembership.toUpperCase()}`);
       return;
     }
     setShowMembershipConfirmation(true);
   };
 
   const confirmBuyMembership = () => {
-    const price = MEMBERSHIP_PRICES[selectedMembership];
-    updateMembership(selectedMembership, 365);
-    updateBalance(user.balanceNuma, user.balanceWld - price);
-    addTransaction("membership", `Membresía ${selectedMembership.toUpperCase()} activada por 1 año`, price, "WLD");
+    if (!user) return;
+    
+    // Calcular costo y duración según tipo de membresía
+    const cost = selectedMembership === "plus" ? 10 : 90; // 10 NUMA para Plus, 90 NUMA para VIP
+    const duration = selectedMembership === "plus" ? 1 : 3; // 1 mes para Plus, 3 meses para VIP
+    
+    // Verificar balance
+    if (user.balanceNuma < cost) {
+      alert(`❌ Balance insuficiente. Necesitas ${cost} NUMA`);
+      return;
+    }
+    
+    // Actualizar membresía
+    updateMembership(selectedMembership, duration);
+    
+    // Descontar NUMA
+    updateBalance(user.balanceNuma - cost, user.balanceWld);
+    
+    // Registrar transacción
+    const description = selectedMembership === "plus" 
+      ? "Membresía Plus (1 mes)" 
+      : "Membresía VIP (3 meses adelantados)";
+    addTransaction("membership", description, cost, "NUMA");
+    
     setShowMembershipConfirmation(false);
+    alert(`✅ Membresía ${selectedMembership.toUpperCase()} activada por ${duration} ${duration === 1 ? 'mes' : 'meses'}`);
   };
 
   const MIN_PIONEER_STAKE = 50;
@@ -395,8 +416,9 @@ export default function Staking() {
                   }`}
                 >
                   <div className="text-lg font-bold text-gray-900 mb-1">Plus</div>
-                  <div className="text-sm text-gray-500 mb-2">200 NUMA/día</div>
-                  <div className="text-xl font-bold text-blue-600">{MEMBERSHIP_PRICES.plus} WLD</div>
+                  <div className="text-sm text-gray-500 mb-1">200 NUMA/día</div>
+                  <div className="text-xs text-gray-400 mb-2">Pago mensual</div>
+                  <div className="text-xl font-bold text-blue-600">10 NUMA/mes</div>
                 </button>
                 <button
                   onClick={() => setSelectedMembership("vip")}
@@ -407,15 +429,17 @@ export default function Staking() {
                   }`}
                 >
                   <div className="text-lg font-bold text-gray-900 mb-1">VIP</div>
-                  <div className="text-sm text-gray-500 mb-2">500 NUMA/día</div>
-                  <div className="text-xl font-bold text-purple-600">{MEMBERSHIP_PRICES.vip} WLD</div>
+                  <div className="text-sm text-gray-500 mb-1">500 NUMA/día</div>
+                  <div className="text-xs text-gray-400 mb-2">3 meses adelantados</div>
+                  <div className="text-xl font-bold text-purple-600">90 NUMA</div>
+                  <div className="text-xs text-gray-500 mt-1">(30 NUMA/mes)</div>
                 </button>
               </div>
               <button
                 onClick={handleBuyMembershipClick}
                 className="w-full py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 active:scale-[0.98] transition-all"
               >
-                Comprar {selectedMembership.toUpperCase()} por {MEMBERSHIP_PRICES[selectedMembership]} WLD
+                Comprar {selectedMembership === "plus" ? "Plus (1 mes)" : "VIP (3 meses)"}
               </button>
             </div>
           )}
@@ -726,83 +750,118 @@ export default function Staking() {
       {/* Modal de Confirmación - Membresía */}
       {showMembershipConfirmation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card-modern max-w-lg w-full p-6 space-y-4">
+          <div className="card-modern max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900">
-              Confirmar Compra de Membresía {selectedMembership === "plus" ? "Plus" : "VIP"}
+              Confirmar Membresía {selectedMembership === "plus" ? "Plus" : "VIP"}
             </h3>
             
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <div className="text-sm text-gray-700">
-                <p className="font-bold text-gray-900 mb-3">Estás adquiriendo:</p>
-                
-                {selectedMembership === "plus" ? (
+            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+              {selectedMembership === "plus" ? (
+                <>
                   <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <span className="text-blue-600">✓</span>
-                      <span>Recompensas diarias: <strong>200 NUMA</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-blue-600">✓</span>
-                      <span>Apalancamiento máximo: <strong>30x</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-blue-600">✓</span>
-                      <span>Duración: <strong>365 días</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-blue-600">✓</span>
-                      <span>Acceso a trading avanzado</span>
+                    <p className="font-bold text-gray-900">Membresía Plus</p>
+                    <div className="text-sm text-gray-700 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-600">✓</span>
+                        <span>Recompensas diarias: <strong>200 NUMA</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-600">✓</span>
+                        <span>Apalancamiento: <strong>hasta 30x</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-600">✓</span>
+                        <span>Duración: <strong>1 mes</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-600">✓</span>
+                        <span>Renovación: <strong>Mensual automática</strong></span>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-600">✓</span>
-                      <span>Recompensas diarias: <strong>500 NUMA</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-600">✓</span>
-                      <span>Apalancamiento máximo: <strong>500x</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-600">✓</span>
-                      <span>Duración: <strong>365 días</strong></span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-600">✓</span>
-                      <span>Acceso prioritario a nuevas funciones</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-600">✓</span>
-                      <span>Soporte premium 24/7</span>
+                  
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Costo:</span>
+                      <span className="text-xl font-bold text-blue-600">10 NUMA</span>
                     </div>
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <p className="font-bold text-gray-900">Membresía VIP</p>
+                    <div className="text-sm text-gray-700 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Recompensas diarias: <strong>500 NUMA</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Apalancamiento: <strong>hasta 500x</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Pago inicial: <strong>3 meses adelantados</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-600">✓</span>
+                        <span>Después de 6 meses: <strong>Pago mensual disponible</strong></span>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="bg-white rounded-lg p-3 border border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Costo total:</span>
-                  <span className="text-2xl font-bold text-gray-900">
-                    {MEMBERSHIP_PRICES[selectedMembership]} WLD
-                  </span>
-                </div>
-              </div>
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                    <p className="text-sm font-bold text-purple-900 mb-2">🔓 Sistema de Líneas de Crédito VIP:</p>
+                    <div className="text-xs text-purple-800 space-y-1">
+                      <div>• <strong>3 meses consecutivos:</strong> 30 WLD disponibles</div>
+                      <div>• <strong>6 meses consecutivos:</strong> 50 WLD disponibles</div>
+                      <div>• <strong>1 año consecutivo:</strong> 70 WLD disponibles</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-xs font-bold text-red-900 mb-1">⚠️ Advertencia Importante:</p>
+                    <div className="text-xs text-red-800 space-y-1">
+                      <p>• Si tomas un crédito, debes pagar en <strong>1 año máximo</strong></p>
+                      <p>• En caso de incumplimiento: <strong>Wallet congelada</strong></p>
+                      <p>• Después de 1 año sin pago: <strong>Fondos confiscados</strong></p>
+                      <p>• Si pierdes consecutividad: <strong>Línea de crédito se reinicia</strong></p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Costo (3 meses):</span>
+                      <span className="text-xl font-bold text-purple-600">90 NUMA</span>
+                    </div>
+                    <div className="text-xs text-gray-500 text-right mt-1">
+                      (30 NUMA/mes)
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs font-bold text-blue-900 mb-1">💡 Nota:</p>
+                    <p className="text-xs text-blue-800">
+                      El crédito VIP es <strong>diferente</strong> al crédito de Pioneros. 
+                      Cada sistema tiene sus propias reglas y condiciones.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setShowMembershipConfirmation(false)}
-                className="py-3 rounded-xl font-bold border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all"
+                className="py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmBuyMembership}
-                className={`py-3 rounded-xl font-bold text-white transition-all ${
-                  selectedMembership === "plus" 
-                    ? "bg-blue-600 hover:bg-blue-700" 
-                    : "bg-purple-600 hover:bg-purple-700"
+                className={`py-3 rounded-xl font-bold text-white hover:opacity-90 transition-all ${
+                  selectedMembership === "plus" ? "bg-blue-600" : "bg-purple-600"
                 }`}
               >
                 Confirmar Compra

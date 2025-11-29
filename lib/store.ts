@@ -113,19 +113,45 @@ export const useAppStore = create<AppState>()(
           if (!state.user) return state;
           
           const now = new Date();
-          const expiresAt = new Date(now.getTime() + duration * 24 * 60 * 60 * 1000);
+          const currentMembership = state.user.membership;
+          
+          // Calcular nueva fecha de expiración
+          const expiresAt = new Date(now.getTime() + duration * 30 * 24 * 60 * 60 * 1000); // duration en meses
+          
+          // Incrementar contador de meses
+          const newMonthsPaid = currentMembership.monthsPaid + duration;
+          const newConsecutiveMonths = currentMembership.tier === tier 
+            ? currentMembership.consecutiveMonths + duration 
+            : duration; // Reset si cambió de tier
           
           const dailyRewards = tier === "plus" ? 200 : tier === "vip" ? 500 : 50;
           const maxLeverage = tier === "plus" ? 30 : tier === "vip" ? 500 : 10;
+          
+          // Determinar línea de crédito VIP disponible
+          let creditLine = null;
+          if (tier === "vip") {
+            if (newConsecutiveMonths >= 12) {
+              creditLine = { duration: "1year" as const, amount: 70, isActive: true };
+            } else if (newConsecutiveMonths >= 6) {
+              creditLine = { duration: "6months" as const, amount: 50, isActive: true };
+            } else if (newConsecutiveMonths >= 3) {
+              creditLine = { duration: "3months" as const, amount: 30, isActive: true };
+            }
+          }
           
           return {
             user: {
               ...state.user,
               membership: {
+                ...currentMembership,
                 tier,
+                startedAt: currentMembership.startedAt || now,
                 expiresAt,
+                monthsPaid: newMonthsPaid,
+                consecutiveMonths: newConsecutiveMonths,
                 dailyRewards,
                 maxLeverage,
+                creditLine,
               },
             },
           };

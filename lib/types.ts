@@ -1,15 +1,35 @@
 // Tipos de membresía
 export type MembershipTier = "free" | "plus" | "vip";
 
+// Línea de crédito VIP según duración
+export interface CreditLine {
+  duration: "3months" | "6months" | "1year";
+  amount: number; // WLD disponible
+  isActive: boolean;
+}
+
 // Información de membresía
 export interface Membership {
   tier: MembershipTier;
-  expiresAt: Date | null;
+  startedAt: Date | null; // Fecha de inicio de membresía
+  expiresAt: Date | null; // Fecha de expiración
+  monthsPaid: number; // Meses pagados acumulados
+  consecutiveMonths: number; // Meses consecutivos activos
   dailyRewards: number;
   maxLeverage: number;
-  vipLoanEligible?: boolean; // Elegible para préstamo VIP (después de 1 año)
-  vipLoanTaken?: boolean; // Si ya tomó un préstamo
-  lastLoanDate?: Date | null; // Última fecha de préstamo
+  
+  // Sistema de crédito VIP
+  creditLine: CreditLine | null; // Línea de crédito desbloqueada
+  activeLoan: {
+    amount: number; // Monto prestado
+    takenAt: Date;
+    dueDate: Date; // 1 año para pagar
+    collateralFrozen: number; // Fondos congelados como garantía
+  } | null;
+  
+  // Advertencias y penalizaciones
+  hasDefaulted: boolean; // Si incumplió un pago
+  walletFrozen: boolean; // Si su wallet está congelada
 }
 
 // Usuario de la aplicación
@@ -42,7 +62,7 @@ export interface Position {
   status: "open" | "closed";
 }
 
-// Pionero (Top 100)
+// Pionero (Top 100) - Sistema DIFERENTE a crédito VIP
 export interface Pioneer {
   userId: string;
   walletAddress: string;
@@ -52,19 +72,26 @@ export interface Pioneer {
   nextPaymentDate: Date;
   lockedUntil: Date; // 1 año desde la entrada
   hasActiveLoan: boolean;
+  
+  // Crédito de Pioneros (50% del capital bloqueado) - DIFERENTE de VIP
+  pioneerCreditLine: {
+    maxAmount: number; // 50% del capital bloqueado
+    used: number; // Cuánto ha usado
+    available: number; // Cuánto tiene disponible
+  };
 }
 
-// Préstamo para Pioneros
+// Préstamo (VIP y Pioneros tienen sistemas DIFERENTES)
 export interface Loan {
   id: string;
-  pioneerId: string;
-  collateral: number; // WLD bloqueado como colateral
-  amountBorrowed: number; // 90% del colateral
-  fee: number; // 5% del colateral
-  totalRepayment: number; // amountBorrowed + fee
-  issuedAt: Date;
-  dueDate: Date;
-  status: "active" | "repaid" | "defaulted";
+  userId: string;
+  type: "vip" | "pioneer"; // Tipo de préstamo
+  amount: number;
+  takenAt: Date;
+  dueDate: Date; // 1 año para pagar
+  repaidAt: Date | null;
+  status: "active" | "repaid" | "defaulted" | "seized"; // seized = fondos confiscados
+  collateralFrozen: number; // Fondos congelados como garantía
 }
 
 // Transacción
@@ -110,16 +137,41 @@ export const LEVERAGE_CONFIG: LeverageConfig = {
 };
 
 export const MEMBERSHIP_PRICES = {
-  plus: 5, // WLD por mes
-  vip: 45, // WLD por 3 meses adelantados (15 WLD/mes)
+  plus: {
+    monthly: 10, // 10 NUMA por mes (pago mensual)
+    duration: 1, // Duración de 1 mes
+  },
+  vip: {
+    quarterly: 90, // 90 NUMA por 3 meses (30 NUMA/mes)
+    duration: 3, // Mínimo 3 meses
+    monthlyAfter6: 30, // Después de 6 meses puede pagar mensual
+  },
+};
+
+// Líneas de crédito VIP según meses consecutivos
+export const VIP_CREDIT_LINES = {
+  "3months": {
+    minMonths: 3, // Mínimo 3 meses consecutivos
+    creditAmount: 30, // 30 WLD disponibles
+    label: "3 meses consecutivos",
+  },
+  "6months": {
+    minMonths: 6, // Mínimo 6 meses consecutivos
+    creditAmount: 50, // 50 WLD disponibles
+    label: "6 meses consecutivos",
+  },
+  "1year": {
+    minMonths: 12, // Mínimo 1 año consecutivo
+    creditAmount: 70, // 70 WLD disponibles
+    label: "1 año consecutivo",
+  },
 };
 
 export const VIP_LOAN_CONFIG = {
-  eligibilityMonths: 12, // Elegible después de 1 año
-  maxLoanAmount: 60, // Máximo 60 WLD
-  interestRate: 8, // 8% tasa preferencial
-  repaymentGracePeriod: 30, // 30 días para pagar
-  cooldownPeriod: 90, // 90 días (3 meses) antes de poder pedir otro
+  repaymentPeriod: 365, // 1 año para pagar
+  penaltyForDefault: "wallet_freeze", // Congelar wallet
+  seizeAfterDays: 365, // Confiscar fondos después de 1 año sin pago
+  collateralRequired: 1.5, // 150% de colateral
 };
 
 export const PIONEER_CONFIG = {
