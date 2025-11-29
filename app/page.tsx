@@ -5,7 +5,6 @@ import WorldIdVerification from "@/components/WorldIdVerification";
 import Dashboard from "@/components/Dashboard";
 import Plataforma from "@/components/Plataforma";
 import Staking from "@/components/Staking";
-import BottomNav from "@/components/BottomNav";
 import { Lock, Trophy, ArrowLeft } from "lucide-react";
 
 export default function Home() {
@@ -157,10 +156,5 @@ export default function Home() {
     }
   };
 
-  return (
-    <>
-      {renderView()}
-      <BottomNav />
-    </>
-  );
+  return renderView();
 }

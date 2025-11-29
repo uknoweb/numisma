@@ -62,7 +62,7 @@ export default function Dashboard() {
     : "🔒 Créditos disponibles solo para Top 100 Pioneros";
 
   return (
-    <div className="min-h-screen bg-black pb-24">
+    <div className="min-h-screen bg-black">
       <div className="max-w-2xl mx-auto p-5 sm:p-6 space-y-6">
         {/* Header con Logo */}
         <div className="flex items-center justify-between pt-6 pb-4">
@@ -255,7 +255,7 @@ export default function Dashboard() {
                 Trading
               </h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Abre posiciones long/short
+                Posiciones long/short
               </p>
             </div>
           </button>
