@@ -67,6 +67,21 @@ export interface Loan {
   status: "active" | "repaid" | "defaulted";
 }
 
+// Transacción
+export interface Transaction {
+  id: string;
+  userId: string;
+  type: "swap" | "membership" | "staking_claim" | "pioneer_lock" | "pioneer_withdraw" | "pioneer_add" | "trading_open" | "trading_close";
+  description: string;
+  amount: number;
+  token: "NUMA" | "WLD";
+  balanceAfter: {
+    numa: number;
+    wld: number;
+  };
+  timestamp: Date;
+}
+
 // Configuración de recompensas de staking
 export interface StakingRewards {
   free: { initial: number; afterThreeMonths: number };

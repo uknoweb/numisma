@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
 import {
@@ -11,6 +12,8 @@ import {
   ArrowRight,
   Trophy,
   CandlestickChart,
+  X,
+  History,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -19,6 +22,10 @@ export default function Dashboard() {
   const setCurrentView = useAppStore((state) => state.setCurrentView);
   const positions = useAppStore((state) => state.positions);
   const currentUserPioneer = useAppStore((state) => state.currentUserPioneer);
+  const transactions = useAppStore((state) => state.transactions);
+  
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<"NUMA" | "WLD" | "ALL">("ALL");
 
   if (!user) return null;
 
@@ -59,7 +66,13 @@ export default function Dashboard() {
         {/* Balance Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* NUMA */}
-          <div className="card-modern p-6">
+          <button
+            onClick={() => {
+              setSelectedToken("NUMA");
+              setShowTransactionHistory(true);
+            }}
+            className="card-modern p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
                 <Wallet className="w-6 h-6 text-indigo-600" />
@@ -71,13 +84,20 @@ export default function Dashboard() {
             <div className="text-4xl font-bold text-gray-900 mb-2">
               {formatNumber(user.balanceNuma, 0)}
             </div>
-            <div className="text-sm text-gray-500">
-              ≈ {formatNumber(user.balanceNuma * 0.001, 2)} WLD
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>≈ {formatNumber(user.balanceNuma * 0.001, 2)} WLD</span>
+              <History className="w-4 h-4" />
             </div>
-          </div>
+          </button>
 
           {/* WLD */}
-          <div className="card-modern p-6">
+          <button
+            onClick={() => {
+              setSelectedToken("WLD");
+              setShowTransactionHistory(true);
+            }}
+            className="card-modern p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                 <Wallet className="w-6 h-6 text-blue-600" />
@@ -89,10 +109,11 @@ export default function Dashboard() {
             <div className="text-4xl font-bold text-gray-900 mb-2">
               {formatNumber(user.balanceWld, 2)}
             </div>
-            <div className="text-sm text-gray-500">
-              💰 En tiempo real
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>💰 En tiempo real</span>
+              <History className="w-4 h-4" />
             </div>
-          </div>
+          </button>
         </div>
 
         {/* P&L Card */}
@@ -273,6 +294,136 @@ export default function Dashboard() {
         )}
 
       </div>
+
+      {/* Modal de Historial de Transacciones */}
+      {showTransactionHistory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-modern max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Historial de Transacciones</h3>
+                <p className="text-sm text-gray-500">
+                  {selectedToken === "ALL" ? "Todas las transacciones" : `Transacciones de ${selectedToken}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTransactionHistory(false)}
+                className="w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-all"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Filtros */}
+            <div className="px-6 py-4 border-b border-gray-200 flex gap-2">
+              <button
+                onClick={() => setSelectedToken("ALL")}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  selectedToken === "ALL"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Todas
+              </button>
+              <button
+                onClick={() => setSelectedToken("NUMA")}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  selectedToken === "NUMA"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                NUMA
+              </button>
+              <button
+                onClick={() => setSelectedToken("WLD")}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  selectedToken === "WLD"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                WLD
+              </button>
+            </div>
+
+            {/* Lista de transacciones */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {transactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">No hay transacciones aún</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Tus movimientos aparecerán aquí
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {transactions
+                    .filter(tx => selectedToken === "ALL" || tx.token === selectedToken)
+                    .map((tx) => {
+                      const isPositive = tx.type === "staking_claim" || 
+                                        tx.type === "pioneer_withdraw" ||
+                                        tx.type === "trading_close";
+                      
+                      return (
+                        <div
+                          key={tx.id}
+                          className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-all"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="font-bold text-gray-900 text-sm">
+                                {tx.description}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(tx.timestamp).toLocaleString("es-MX", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </div>
+                            </div>
+                            <div className={`text-lg font-bold ${
+                              isPositive ? "text-green-600" : "text-red-600"
+                            }`}>
+                              {isPositive ? "+" : "-"}{formatNumber(Math.abs(tx.amount), 2)} {tx.token}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-200">
+                            <span>Balance después:</span>
+                            <span className="font-bold">
+                              {formatNumber(tx.balanceAfter.numa, 0)} NUMA · {formatNumber(tx.balanceAfter.wld, 2)} WLD
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowTransactionHistory(false)}
+                className="w-full py-3 rounded-xl bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   Position,
   Pioneer,
   Loan,
+  Transaction,
   MembershipTier,
   STAKING_REWARDS,
   LEVERAGE_CONFIG,
@@ -39,6 +40,10 @@ interface AppState {
   addLoan: (loan: Loan) => void;
   repayLoan: (loanId: string) => void;
   
+  // Transacciones
+  transactions: Transaction[];
+  addTransaction: (type: Transaction["type"], description: string, amount: number, token: "NUMA" | "WLD") => void;
+  
   // UI State
   currentView: "verify" | "dashboard" | "trading" | "staking" | "creditos";
   setCurrentView: (
@@ -65,6 +70,7 @@ export const useAppStore = create<AppState>()(
       pioneers: [],
       currentUserPioneer: null,
       loans: [],
+      transactions: [],
       currentView: "verify",
       lastClaim: null,
       marketPrice: 50000, // Precio inicial BTC simulado
@@ -78,6 +84,29 @@ export const useAppStore = create<AppState>()(
             ? { ...state.user, balanceNuma: numa, balanceWld: wld }
             : null,
         })),
+      
+      addTransaction: (type, description, amount, token) =>
+        set((state) => {
+          if (!state.user) return state;
+          
+          const newTransaction: Transaction = {
+            id: `tx_${Date.now()}`,
+            userId: state.user.id,
+            type,
+            description,
+            amount,
+            token,
+            balanceAfter: {
+              numa: state.user.balanceNuma,
+              wld: state.user.balanceWld,
+            },
+            timestamp: new Date(),
+          };
+          
+          return {
+            transactions: [newTransaction, ...state.transactions],
+          };
+        }),
       
       updateMembership: (tier: MembershipTier, duration: number) =>
         set((state) => {
@@ -213,6 +242,7 @@ export const useAppStore = create<AppState>()(
         user: state.user,
         isWorldIdVerified: state.isWorldIdVerified,
         positions: state.positions,
+        transactions: state.transactions,
         lastClaim: state.lastClaim,
       }),
     }

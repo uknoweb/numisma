@@ -29,6 +29,7 @@ export default function Staking() {
   const currentUserPioneer = useAppStore((state) => state.currentUserPioneer);
   const setCurrentUserPioneer = useAppStore((state) => state.setCurrentUserPioneer);
   const setPioneers = useAppStore((state) => state.setPioneers);
+  const addTransaction = useAppStore((state) => state.addTransaction);
 
   const [swapAmount, setSwapAmount] = useState("100");
   const [swapDirection, setSwapDirection] = useState<"NUMA_TO_WLD" | "WLD_TO_NUMA">("NUMA_TO_WLD");
@@ -87,6 +88,7 @@ export default function Staking() {
     if (!canClaimReward) return;
     const totalReward = dailyReward + accumulatedReward;
     updateBalance(user.balanceNuma + totalReward, user.balanceWld);
+    addTransaction("staking_claim", `Recompensa diaria reclamada`, totalReward, "NUMA");
     setLastClaim(new Date());
     setAccumulatedReward(0);
     alert(`✅ Has reclamado ${formatNumber(totalReward, 2)} NUMA`);
@@ -115,9 +117,11 @@ export default function Staking() {
     if (swapDirection === "NUMA_TO_WLD") {
       const { wldReceived } = swapResult as { wldReceived: number; fee: number };
       updateBalance(user.balanceNuma - swapNum, user.balanceWld + wldReceived);
+      addTransaction("swap", `Swap: ${formatNumber(swapNum, 0)} NUMA → ${formatNumber(wldReceived, 2)} WLD`, swapNum, "NUMA");
     } else {
       const { numaReceived } = swapResult as { numaReceived: number; fee: number };
       updateBalance(user.balanceNuma + numaReceived, user.balanceWld - swapNum);
+      addTransaction("swap", `Swap: ${formatNumber(swapNum, 2)} WLD → ${formatNumber(numaReceived, 0)} NUMA`, swapNum, "WLD");
     }
     setSwapAmount("100");
     setShowSwapConfirmation(false);
@@ -136,6 +140,7 @@ export default function Staking() {
     const price = MEMBERSHIP_PRICES[selectedMembership];
     updateMembership(selectedMembership, 365);
     updateBalance(user.balanceNuma, user.balanceWld - price);
+    addTransaction("membership", `Membresía ${selectedMembership.toUpperCase()} activada por 1 año`, price, "WLD");
     setShowMembershipConfirmation(false);
   };
 
@@ -176,6 +181,7 @@ export default function Staking() {
       updatedPioneers.find((p: any) => p.userId === user.id) || null
     );
     updateBalance(user.balanceNuma, user.balanceWld - pioneerNum);
+    addTransaction("pioneer_lock", `Capital bloqueado como Pionero #${newPioneer.rank}`, pioneerNum, "WLD");
     setPioneerAmount("50");
     setAcceptedPioneerTerms(false);
     setShowPioneerConfirmation(false);
@@ -207,6 +213,7 @@ export default function Staking() {
       updatedPioneers.find((p: any) => p.userId === user.id) || null
     );
     updateBalance(user.balanceNuma, user.balanceWld - pioneerNum);
+    addTransaction("pioneer_add", `Capital agregado a sistema Pioneros`, pioneerNum, "WLD");
     setPioneerAmount("50");
     alert("✅ Capital agregado exitosamente");
   };
@@ -231,6 +238,7 @@ export default function Staking() {
     setPioneers(updatedPioneers);
     setCurrentUserPioneer(null);
     updateBalance(user.balanceNuma, user.balanceWld + amountToReturn);
+    addTransaction("pioneer_withdraw", `Retiro de capital Pioneros (penalización 20%)`, amountToReturn, "WLD");
     setShowWithdrawConfirmation(false);
     
     alert(`⚠️ Has retirado tu capital con penalización del 20%\nRecibiste: ${formatNumber(amountToReturn, 2)} WLD\nPenalización: ${formatNumber(penalty, 2)} WLD`);
