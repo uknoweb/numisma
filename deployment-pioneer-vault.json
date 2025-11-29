@@ -1,0 +1,15 @@
+{
+  "contractAddress": "0xAda711D20cfb0f34bAcDdeEA148f12a6D10e63Dd",
+  "numaTokenAddress": "0xa57917BC4568B9e392869AbAc504fEe746e7bede",
+  "tradingPoolAddress": "0x73387224339C83eB19b0389BA3Aa33C37944ff72",
+  "deployer": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "network": "worldchain-sepolia",
+  "deploymentDate": "2025-11-29T18:01:56.777Z",
+  "blockNumber": 21945946,
+  "constants": {
+    "maxPioneers": 100,
+    "lockPeriod": "365 days (1 year)",
+    "earlyWithdrawalPenalty": "20%",
+    "profitShare": "5%"
+  }
+}
