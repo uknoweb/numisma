@@ -19,7 +19,8 @@
     "distribute:numa": "hardhat run scripts/distribute-numa.js --network worldchain-sepolia",
     "fund:pool": "hardhat run scripts/fund-pool.js --network worldchain-sepolia",
     "compile": "hardhat compile",
-    "test:oracle": "node scripts/test-oracle.js"
+    "test:oracle": "node scripts/test-oracle.js",
+    "test:complete": "hardhat run scripts/test-complete-flow.js --network worldchain-sepolia"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

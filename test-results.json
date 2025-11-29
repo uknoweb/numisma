@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-11-29T18:38:40.711Z",
+  "tester": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "tests": [
+    {
+      "test": "Faucet WLD",
+      "status": "PASSED"
+    },
+    {
+      "test": "Approve NUMA for Pool",
+      "status": "PASSED"
+    },
+    {
+      "test": "Deposit NUMA to Pool",
+      "status": "PASSED"
+    },
+    {
+      "test": "Deposit WLD to Pool",
+      "status": "PASSED"
+    },
+    {
+      "test": "Check Initial Membership",
+      "status": "PASSED"
+    },
+    {
+      "test": "Approve WLD for Membership",
+      "status": "PASSED"
+    },
+    {
+      "test": "Buy PLUS Membership",
+      "status": "PASSED"
+    },
+    {
+      "test": "Open Position 50x",
+      "status": "PASSED"
+    },
+    {
+      "test": "Reject 100x Leverage",
+      "status": "PASSED"
+    },
+    {
+      "test": "Close Position",
+      "status": "PASSED"
+    },
+    {
+      "test": "Withdraw NUMA",
+      "status": "PASSED"
+    },
+    {
+      "test": "Approve NUMA for Vault",
+      "status": "PASSED"
+    },
+    {
+      "test": "Deposit to Vault",
+      "status": "PASSED"
+    }
+  ],
+  "success": 13,
+  "failed": 0,
+  "transactions": [
+    {
+      "name": "Faucet WLD",
+      "hash": "0x71b90a5c97c64f9ef8b9cdb46305a0f545e2bc5ff7f818f47a555d7c42d74d19"
+    },
+    {
+      "name": "Approve NUMA",
+      "hash": "0x0c78d76bb1f43653cf963fdafb7f572173bea2c93b831b923151c94c03788063"
+    },
+    {
+      "name": "Deposit NUMA",
+      "hash": "0x6f25e0e5e86f09484c66bb6021292afbe5a31afac8ec8d59dc8f8555df3dc6ec"
+    },
+    {
+      "name": "Deposit WLD",
+      "hash": "0x322bd565dadeb4dd12de54f6de217a9161787f7fb50c6187533b6f55e5ca622a"
+    },
+    {
+      "name": "Approve WLD",
+      "hash": "0x697c38348813874e618d0553f3ed55c168c88f17e6a6be24e760097d46d54901"
+    },
+    {
+      "name": "Open Position 50x",
+      "hash": "0xa5d02e07bd88f36b34aa24d2d49af354e8cc45389b9db90f42a1bf32a43f8778"
+    },
+    {
+      "name": "Close Position",
+      "hash": "0x6a299e9d87212baff53b280f8754b1495d56ceb9b2912e69b5a8b6614a409f38"
+    },
+    {
+      "name": "Withdraw NUMA",
+      "hash": "0x136736c2e1b81c6d958e03ad485408de838a2b7d78a0f023dded998cf63bd57f"
+    },
+    {
+      "name": "Approve NUMA for Vault",
+      "hash": "0x994ab6c145144ab54a7839da2838c6f2afeb27d7f01b4d0a0c9a5e83a27d6c24"
+    },
+    {
+      "name": "Deposit to Vault",
+      "hash": "0xc92022be30c499e3a0d97b12912214981aa4cc814819f7849bf8948df80be6bd"
+    }
+  ]
+}
