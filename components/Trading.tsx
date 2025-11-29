@@ -9,8 +9,13 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import { formatNumber, calculatePnL } from "@/lib/utils";
+import { useWLDPrice, useNUMAPrice } from "@/hooks/usePrices";
+import { useOpenPosition, useClosePosition, useGetCurrentPnL } from "@/hooks/usePoolContract";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { TradingPair, PositionType } from "@/lib/contracts";
 
 type MarketPair = "WLD/USDT" | "NUMA/WLD";
 type Direction = "long" | "short";
@@ -30,9 +35,14 @@ export default function Trading() {
   const [showGuide, setShowGuide] = useState(false);
   const [timeframe, setTimeframe] = useState<"1s" | "1m" | "5m" | "15m">("1s");
   
-  // Precios en tiempo real
-  const [wldPrice, setWldPrice] = useState(2.5);
-  const [numaPrice, setNumaPrice] = useState(0.001);
+  // Blockchain hooks
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { price: wldPrice, isLoading: wldLoading } = useWLDPrice();
+  const { price: numaPrice } = useNUMAPrice();
+  const { openPosition, isPending: isOpeningPosition, isConfirming: isConfirmingOpen } = useOpenPosition();
+  const { closePosition: closePositionOnChain, isPending: isClosingPosition, isConfirming: isConfirmingClose } = useClosePosition();
   
   // Historial de precios para la gráfica según temporalidad
   const [wldPriceHistory, setWldPriceHistory] = useState<number[]>(() => {
@@ -123,8 +133,8 @@ export default function Trading() {
   const availableBalance = selectedPair === "WLD/USDT" ? user.balanceWld : user.balanceNuma;
   const balanceSymbol = selectedPair === "WLD/USDT" ? "WLD" : "NUMA";
 
-  // Comisiones OCULTAS de plataforma (0.1% en apertura y cierre)
-  const PLATFORM_FEE = 0.001; // 0.1% fee oculto
+  // Comisiones del contrato (0.2% en apertura)
+  const PLATFORM_FEE = 0.002; // 0.2% trading fee (20 basis points)
   const openingFee = amountNum * PLATFORM_FEE;
   const estimatedPnL1Percent = amountNum * leverage * 0.01;
   
@@ -137,7 +147,12 @@ export default function Trading() {
   const minPrice = priceHistory.length > 0 ? Math.min(...priceHistory) : currentPrice * 0.99;
   const priceRange = maxPrice - minPrice || 0.01;
 
-  const handleOpenPosition = () => {
+  const handleOpenPosition = async () => {
+    if (!isConnected) {
+      alert("❌ Por favor conecta tu wallet primero");
+      return;
+    }
+
     if (amountNum < 0.1) {
       alert("❌ Monto mínimo: 0.1");
       return;
@@ -149,54 +164,92 @@ export default function Trading() {
       return;
     }
 
-    const newPosition = {
-      id: `pos_${Date.now()}`,
-      userId: user.id,
-      symbol: selectedPair,
-      type: direction,
-      entryPrice: currentPrice,
-      currentPrice: currentPrice,
-      amount: amountNum,
-      leverage: leverage,
-      pnl: 0,
-      pnlPercentage: 0,
-      openedAt: new Date(),
-      closedAt: null,
-      status: "open" as const,
-    };
+    try {
+      // Mapear valores al contrato
+      const pair = selectedPair === "WLD/USDT" ? TradingPair.WLD_USDT : TradingPair.NUMA_WLD;
+      const posType = direction === "long" ? PositionType.LONG : PositionType.SHORT;
 
-    addPosition(newPosition);
+      // Llamar al contrato
+      await openPosition(pair, posType, leverage);
 
-    // Descontar balance + fee oculto de apertura (0.1%)
-    if (selectedPair === "WLD/USDT") {
-      updateBalance(user.balanceNuma, user.balanceWld - amountNum - openingFee);
-    } else {
-      updateBalance(user.balanceNuma - amountNum - openingFee, user.balanceWld);
+      // Crear posición local para UI (será reemplazado por lectura del contrato después)
+      const newPosition = {
+        id: `pos_${Date.now()}`,
+        userId: user.id,
+        symbol: selectedPair,
+        type: direction,
+        entryPrice: currentPrice,
+        currentPrice: currentPrice,
+        amount: amountNum,
+        leverage: leverage,
+        pnl: 0,
+        pnlPercentage: 0,
+        openedAt: new Date(),
+        closedAt: null,
+        status: "open" as const,
+      };
+
+      addPosition(newPosition);
+
+      // Descontar balance + fee oculto de apertura (0.2%)
+      if (selectedPair === "WLD/USDT") {
+        updateBalance(user.balanceNuma, user.balanceWld - amountNum - openingFee);
+      } else {
+        updateBalance(user.balanceNuma - amountNum - openingFee, user.balanceWld);
+      }
+
+      setAmount("");
+      alert(`✅ Posición ${direction.toUpperCase()} abierta\n${amountNum} ${balanceSymbol} @ ${formatNumber(currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}`);
+    } catch (error: any) {
+      console.error('Error opening position:', error);
+      if (error.message?.includes('User rejected')) {
+        alert('❌ Transacción cancelada');
+      } else {
+        alert('❌ Error al abrir posición. Por favor intenta de nuevo.');
+      }
     }
-
-    setAmount("");
-    alert(`✅ Posición ${direction.toUpperCase()} abierta\n${amountNum} ${balanceSymbol} @ ${formatNumber(currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}`);
   };
 
-  const handleClosePosition = (positionId: string) => {
+  const handleClosePosition = async (positionId: string) => {
+    if (!isConnected) {
+      alert("❌ Por favor conecta tu wallet primero");
+      return;
+    }
+
     const position = positions.find(p => p.id === positionId);
     if (!position) return;
 
-    // Fee oculto de cierre (0.1%)
-    const closingFee = position.amount * PLATFORM_FEE;
-    
-    // P&L final después de fee de cierre
-    const finalPnL = position.pnl - closingFee;
+    try {
+      // TODO: Obtener el ID real del contrato una vez implementemos lectura de posiciones
+      // Por ahora usamos índice 0 como placeholder
+      const contractPositionId = 0;
 
-    // Devolver al balance (monto original + P&L - fee de cierre)
-    if (position.symbol === "WLD/USDT") {
-      updateBalance(user.balanceNuma, user.balanceWld + position.amount + finalPnL);
-    } else {
-      updateBalance(user.balanceNuma + position.amount + finalPnL, user.balanceWld);
+      // Llamar al contrato
+      await closePositionOnChain(BigInt(contractPositionId));
+
+      // Fee oculto de cierre (0.2%)
+      const closingFee = position.amount * PLATFORM_FEE;
+      
+      // P&L final después de fee de cierre
+      const finalPnL = position.pnl - closingFee;
+
+      // Devolver al balance (monto original + P&L - fee de cierre)
+      if (position.symbol === "WLD/USDT") {
+        updateBalance(user.balanceNuma, user.balanceWld + position.amount + finalPnL);
+      } else {
+        updateBalance(user.balanceNuma + position.amount + finalPnL, user.balanceWld);
+      }
+
+      closePosition(positionId);
+      alert(`✅ Posición cerrada\nP&L: ${finalPnL >= 0 ? "+" : ""}${formatNumber(finalPnL, 2)} ${position.symbol === "WLD/USDT" ? "WLD" : "NUMA"}`);
+    } catch (error: any) {
+      console.error('Error closing position:', error);
+      if (error.message?.includes('User rejected')) {
+        alert('❌ Transacción cancelada');
+      } else {
+        alert('❌ Error al cerrar posición. Por favor intenta de nuevo.');
+      }
     }
-
-    closePosition(positionId);
-    alert(`✅ Posición cerrada\nP&L: ${finalPnL >= 0 ? "+" : ""}${formatNumber(finalPnL, 2)} ${position.symbol === "WLD/USDT" ? "WLD" : "NUMA"}`);
   };
 
   return (
@@ -212,10 +265,38 @@ export default function Trading() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">Trading de Futuros</h1>
             <p className="text-sm text-gray-500">Opera con apalancamiento en tiempo real</p>
           </div>
+          
+          {/* Botón de Wallet */}
+          {isConnected ? (
+            <div className="flex items-center gap-2">
+              <div className="px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                <div className="text-xs text-green-600 font-medium">Conectado</div>
+                <div className="text-sm font-mono font-bold text-green-700">
+                  {address?.slice(0, 6)}...{address?.slice(-4)}
+                </div>
+              </div>
+              <button
+                onClick={() => disconnect()}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100 transition-all text-sm"
+              >
+                Desconectar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                const connector = connectors[0];
+                if (connector) connect({ connector });
+              }}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+            >
+              Conectar Wallet
+            </button>
+          )}
         </div>
 
         {/* Selector de Par */}
@@ -263,9 +344,16 @@ export default function Trading() {
         <div className="card-modern p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm text-gray-500 font-medium">{selectedPair}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-sm text-gray-500 font-medium">{selectedPair}</div>
+                {wldLoading && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Precio en vivo"></div>
+              </div>
               <div className="text-4xl font-bold text-gray-900">
                 {formatNumber(currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                {selectedPair === "WLD/USDT" ? "Desde CoinGecko API" : "Tasa fija 10:1"}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -495,16 +583,24 @@ export default function Trading() {
           {/* Botón Abrir */}
           <button
             onClick={handleOpenPosition}
-            disabled={amountNum < 0.1}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-              amountNum >= 0.1
+            disabled={amountNum < 0.1 || isOpeningPosition || isConfirmingOpen || !isConnected}
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
+              amountNum >= 0.1 && isConnected && !isOpeningPosition && !isConfirmingOpen
                 ? direction === "long"
                   ? "bg-green-600 text-white hover:bg-green-700 active:scale-[0.98]"
                   : "bg-red-600 text-white hover:bg-red-700 active:scale-[0.98]"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {amountNum >= 0.1 
+            {isOpeningPosition && <Loader2 className="w-5 h-5 animate-spin" />}
+            {isConfirmingOpen && <Loader2 className="w-5 h-5 animate-spin" />}
+            {!isConnected 
+              ? "Conecta tu wallet" 
+              : isOpeningPosition
+              ? "Esperando confirmación..."
+              : isConfirmingOpen
+              ? "Confirmando transacción..."
+              : amountNum >= 0.1 
               ? `Abrir ${direction.toUpperCase()} ${leverage}x` 
               : "Ingresa un monto (mín. 0.1)"}
           </button>
@@ -576,9 +672,19 @@ export default function Trading() {
 
                   <button
                     onClick={() => handleClosePosition(position.id)}
-                    className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 active:scale-[0.98] transition-all"
+                    disabled={isClosingPosition || isConfirmingClose || !isConnected}
+                    className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                      isClosingPosition || isConfirmingClose || !isConnected
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.98]"
+                    }`}
                   >
-                    Cerrar Posición
+                    {(isClosingPosition || isConfirmingClose) && <Loader2 className="w-5 h-5 animate-spin" />}
+                    {isClosingPosition
+                      ? "Esperando confirmación..."
+                      : isConfirmingClose
+                      ? "Confirmando transacción..."
+                      : "Cerrar Posición"}
                   </button>
                 </div>
               );
@@ -614,8 +720,8 @@ export default function Trading() {
                 ganancias Y pérdidas. 10x = 10 veces más ganancias o pérdidas.
               </div>
               <div>
-                <span className="font-bold text-gray-900">Comisiones:</span> WLD/USDT cobra 0.1%, 
-                NUMA/WLD cobra 1% al abrir y cerrar.
+                <span className="font-bold text-gray-900">Comisiones:</span> 0.2% al abrir posiciones
+                (20 basis points según contrato).
               </div>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <span className="font-bold text-yellow-800">⚠️ Cierre automático:</span> Si tu 
