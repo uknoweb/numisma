@@ -7,6 +7,7 @@ import Staking from "@/components/Staking";
 import Trading from "@/components/Trading";
 import ProfileView from "@/components/ProfileView";
 import BottomNavigation from "@/components/BottomNavigation";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Lock, Trophy, ArrowLeft } from "lucide-react";
 
@@ -163,6 +164,7 @@ export default function Home() {
 
   return (
     <>
+      <OnboardingTutorial />
       <div className="transition-opacity duration-300">
         {renderView()}
       </div>
