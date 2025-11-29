@@ -2,6 +2,7 @@
 
 import { Home, TrendingUp, Trophy, User } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import analytics from "@/lib/analytics";
 
 interface NavItem {
   id: "dashboard" | "trading" | "staking" | "profile";
