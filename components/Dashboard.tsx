@@ -12,7 +12,6 @@ import {
   CandlestickChart,
 } from "lucide-react";
 import { useState } from "react";
-import TradingChartMobileV2 from "./TradingChartMobileV2";
 import Image from "next/image";
 
 export default function Dashboard() {
@@ -20,8 +19,6 @@ export default function Dashboard() {
   const setCurrentView = useAppStore((state) => state.setCurrentView);
   const positions = useAppStore((state) => state.positions);
   const currentUserPioneer = useAppStore((state) => state.currentUserPioneer);
-  
-  const [showTradingChart, setShowTradingChart] = useState(false);
 
   if (!user) return null;
 
@@ -246,7 +243,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           {/* Trading Button */}
           <button
-            onClick={() => setShowTradingChart(true)}
+            onClick={() => setCurrentView("plataforma")}
             className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#FFD700]/20 via-[#D4AF37]/10 to-transparent border-2 border-[#FFD700]/30 active:scale-[0.97] transition-all shadow-lg shadow-[#FFD700]/20"
           >
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#FFD700] opacity-10 rounded-full blur-2xl"></div>
@@ -383,11 +380,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-      
-      {/* Trading Chart Modal - Nueva versión estilo MEXC */}
-      {showTradingChart && (
-        <TradingChartMobileV2 onClose={() => setShowTradingChart(false)} />
-      )}
     </div>
   );
 }
