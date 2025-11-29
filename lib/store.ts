@@ -45,9 +45,9 @@ interface AppState {
   addTransaction: (type: Transaction["type"], description: string, amount: number, token: "NUMA" | "WLD") => void;
   
   // UI State
-  currentView: "verify" | "dashboard" | "trading" | "staking" | "creditos";
+  currentView: "verify" | "dashboard" | "trading" | "staking" | "creditos" | "profile";
   setCurrentView: (
-    view: "verify" | "dashboard" | "trading" | "staking" | "creditos"
+    view: "verify" | "dashboard" | "trading" | "staking" | "creditos" | "profile"
   ) => void;
   
   // Último reclamo de recompensa

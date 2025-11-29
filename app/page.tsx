@@ -5,6 +5,8 @@ import WorldIdVerification from "@/components/WorldIdVerification";
 import Dashboard from "@/components/Dashboard";
 import Staking from "@/components/Staking";
 import Trading from "@/components/Trading";
+import ProfileView from "@/components/ProfileView";
+import BottomNavigation from "@/components/BottomNavigation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Lock, Trophy, ArrowLeft } from "lucide-react";
 
@@ -28,6 +30,8 @@ export default function Home() {
         return <Trading />;
       case "staking":
         return <Staking />;
+      case "profile":
+        return <ProfileView />;
       case "creditos":
         // Verificar si tiene acceso a créditos
         const isPioneerTop100 = currentUserPioneer && currentUserPioneer.rank <= 100;
@@ -157,5 +161,12 @@ export default function Home() {
     }
   };
 
-  return renderView();
+  return (
+    <>
+      <div className="transition-opacity duration-300">
+        {renderView()}
+      </div>
+      <BottomNavigation />
+    </>
+  );
 }
