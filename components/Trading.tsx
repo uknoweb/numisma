@@ -249,54 +249,64 @@ export default function Trading() {
           </div>
 
           {/* Gráfica simple con líneas */}
-          <div className="h-64 bg-gray-50 rounded-xl p-4 relative overflow-hidden">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-4">
-              {/* Grid */}
-              <line x1="0" y1="50" x2="100" y2="50" stroke="#e5e7eb" strokeWidth="0.2" />
-              <line x1="25" y1="0" x2="25" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
-              <line x1="50" y1="0" x2="50" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
-              <line x1="75" y1="0" x2="75" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
-              
-              {/* Línea de precio */}
-              {priceHistory.length > 1 && (
-                <polyline
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="0.5"
-                  points={priceHistory
-                    .map((price, i) => {
-                      const x = (i / (priceHistory.length - 1)) * 100;
-                      const y = ((maxPrice - price) / priceRange) * 100;
-                      return `${x},${y}`;
-                    })
-                    .join(" ")}
-                />
-              )}
+          <div className="h-64 bg-gray-50 rounded-xl overflow-hidden relative">
+            <div className="absolute inset-0 p-4">
+              <svg 
+                width="100%" 
+                height="100%" 
+                viewBox="0 0 500 200" 
+                preserveAspectRatio="none"
+                className="w-full h-full"
+              >
+                {/* Grid de fondo */}
+                <line x1="0" y1="100" x2="500" y2="100" stroke="#d1d5db" strokeWidth="1" strokeDasharray="5,5" />
+                <line x1="125" y1="0" x2="125" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                <line x1="250" y1="0" x2="250" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                <line x1="375" y1="0" x2="375" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                
+                {/* Línea de precio */}
+                {priceHistory.length > 1 && (
+                  <polyline
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3"
+                    vectorEffect="non-scaling-stroke"
+                    points={priceHistory
+                      .map((price, i) => {
+                        const x = (i / (priceHistory.length - 1)) * 500;
+                        const y = ((maxPrice - price) / priceRange) * 200;
+                        return `${x},${y}`;
+                      })
+                      .join(" ")}
+                  />
+                )}
 
-              {/* Marcadores de posiciones abiertas */}
-              {myPositions.map((pos) => {
-                const entryY = ((maxPrice - pos.entryPrice) / priceRange) * 100;
-                return (
-                  <g key={pos.id}>
-                    <line
-                      x1="0"
-                      y1={entryY}
-                      x2="100"
-                      y2={entryY}
-                      stroke={pos.type === "long" ? "#22c55e" : "#ef4444"}
-                      strokeWidth="0.3"
-                      strokeDasharray="2"
-                    />
-                    <circle
-                      cx="95"
-                      cy={entryY}
-                      r="1.5"
-                      fill={pos.type === "long" ? "#22c55e" : "#ef4444"}
-                    />
-                  </g>
-                );
-              })}
-            </svg>
+                {/* Marcadores de posiciones abiertas */}
+                {myPositions.map((pos) => {
+                  const entryY = ((maxPrice - pos.entryPrice) / priceRange) * 200;
+                  return (
+                    <g key={pos.id}>
+                      <line
+                        x1="0"
+                        y1={entryY}
+                        x2="500"
+                        y2={entryY}
+                        stroke={pos.type === "long" ? "#22c55e" : "#ef4444"}
+                        strokeWidth="2"
+                        strokeDasharray="8,4"
+                        opacity="0.7"
+                      />
+                      <circle
+                        cx="480"
+                        cy={entryY}
+                        r="6"
+                        fill={pos.type === "long" ? "#22c55e" : "#ef4444"}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
           </div>
 
           <div className="mt-4 bg-gray-50 rounded-lg p-3">
@@ -305,6 +315,12 @@ export default function Trading() {
               <span className="font-bold text-gray-900">
                 {formatNumber(availableBalance, 2)} {balanceSymbol}
               </span>
+            </div>
+            {/* Info de debug para verificar datos */}
+            <div className="text-xs text-gray-400 mt-2 space-y-1">
+              <div>Puntos de datos: {priceHistory.length}</div>
+              <div>Precio actual: {formatNumber(currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}</div>
+              <div>Rango: {formatNumber(minPrice, selectedPair === "NUMA/WLD" ? 6 : 2)} - {formatNumber(maxPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}</div>
             </div>
           </div>
         </div>
