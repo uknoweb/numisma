@@ -28,12 +28,13 @@ export default function Trading() {
   const [leverage, setLeverage] = useState(5);
   const [amount, setAmount] = useState("");
   const [showGuide, setShowGuide] = useState(false);
+  const [timeframe, setTimeframe] = useState<"1s" | "1m" | "5m" | "15m">("1s");
   
   // Precios en tiempo real
   const [wldPrice, setWldPrice] = useState(2.5);
   const [numaPrice, setNumaPrice] = useState(0.001);
   
-  // Historial de precios para la gráfica (últimos 50 puntos) - inicializar con datos
+  // Historial de precios para la gráfica según temporalidad
   const [wldPriceHistory, setWldPriceHistory] = useState<number[]>(() => {
     const initialHistory = [];
     for (let i = 0; i < 50; i++) {
@@ -44,29 +45,41 @@ export default function Trading() {
   const [numaPriceHistory, setNumaPriceHistory] = useState<number[]>(() => {
     const initialHistory = [];
     for (let i = 0; i < 50; i++) {
-      initialHistory.push(0.001 + (Math.random() * 0.0002 - 0.0001));
+      initialHistory.push(0.001 + (Math.random() * 0.0004 - 0.0002));
     }
     return initialHistory;
   });
 
-  // Actualizar precio en tiempo real
+  // Actualizar precio en tiempo real según temporalidad
   useEffect(() => {
+    // Determinar intervalo según timeframe
+    const intervals = {
+      "1s": 1000,
+      "1m": 60000,
+      "5m": 300000,
+      "15m": 900000,
+    };
+    
     const interval = setInterval(() => {
       setWldPrice(prev => {
-        const newPrice = Math.max(prev + (Math.random() * 0.04 - 0.02), 1);
+        // WLD: Volatilidad sutil aumentada para generar ganancias (0.3% aprox)
+        const volatility = prev * (Math.random() * 0.006 - 0.003); // ±0.3%
+        const newPrice = Math.max(prev + volatility, 1);
         setWldPriceHistory(h => [...h.slice(-49), newPrice]);
         return newPrice;
       });
       
       setNumaPrice(prev => {
-        const newPrice = Math.max(prev + (Math.random() * 0.0002 - 0.0001), 0.0001);
+        // NUMA: Alta volatilidad (±10%)
+        const volatility = prev * (Math.random() * 0.2 - 0.1); // ±10%
+        const newPrice = Math.max(prev + volatility, 0.0001);
         setNumaPriceHistory(h => [...h.slice(-49), newPrice]);
         return newPrice;
       });
-    }, 1000);
+    }, intervals[timeframe]);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timeframe]);
 
   // Actualizar P&L de posiciones y cerrar automáticamente si balance < 0.1
   useEffect(() => {
@@ -110,9 +123,9 @@ export default function Trading() {
   const availableBalance = selectedPair === "WLD/USDT" ? user.balanceWld : user.balanceNuma;
   const balanceSymbol = selectedPair === "WLD/USDT" ? "WLD" : "NUMA";
 
-  // Comisiones
-  const feeRate = selectedPair === "WLD/USDT" ? 0.001 : 0.01; // 0.1% WLD, 1% NUMA
-  const openingFee = amountNum * feeRate;
+  // Comisiones OCULTAS de plataforma (0.1% en apertura y cierre)
+  const PLATFORM_FEE = 0.001; // 0.1% fee oculto
+  const openingFee = amountNum * PLATFORM_FEE;
   const estimatedPnL1Percent = amountNum * leverage * 0.01;
   
   const myPositions = positions.filter(
@@ -130,8 +143,9 @@ export default function Trading() {
       return;
     }
 
+    // Verificar balance incluyendo fee oculto
     if (amountNum + openingFee > availableBalance) {
-      alert(`❌ Balance insuficiente\nNecesitas: ${formatNumber(amountNum + openingFee, 2)} ${balanceSymbol}`);
+      alert(`❌ Balance insuficiente`);
       return;
     }
 
@@ -153,7 +167,7 @@ export default function Trading() {
 
     addPosition(newPosition);
 
-    // Descontar del balance correspondiente
+    // Descontar balance + fee oculto de apertura (0.1%)
     if (selectedPair === "WLD/USDT") {
       updateBalance(user.balanceNuma, user.balanceWld - amountNum - openingFee);
     } else {
@@ -168,10 +182,13 @@ export default function Trading() {
     const position = positions.find(p => p.id === positionId);
     if (!position) return;
 
-    const closingFee = position.amount * feeRate;
+    // Fee oculto de cierre (0.1%)
+    const closingFee = position.amount * PLATFORM_FEE;
+    
+    // P&L final después de fee de cierre
     const finalPnL = position.pnl - closingFee;
 
-    // Devolver al balance
+    // Devolver al balance (monto original + P&L - fee de cierre)
     if (position.symbol === "WLD/USDT") {
       updateBalance(user.balanceNuma, user.balanceWld + position.amount + finalPnL);
     } else {
@@ -203,8 +220,8 @@ export default function Trading() {
 
         {/* Selector de Par */}
         <div className="card-modern p-4">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Par de trading:</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="text-sm font-medium text-gray-700">Par:</label>
             <select
               value={selectedPair}
               onChange={(e) => setSelectedPair(e.target.value as MarketPair)}
@@ -214,9 +231,29 @@ export default function Trading() {
               <option value="WLD/USDT">WLD/USDT</option>
               <option value="NUMA/WLD">NUMA/WLD</option>
             </select>
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <label className="text-sm font-medium text-gray-700">Temporalidad:</label>
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                {(["1s", "1m", "5m", "15m"] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+                      timeframe === tf
+                        ? "bg-indigo-600 text-white"
+                        : "text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
             {myPositions.length > 0 && (
-              <span className="ml-auto px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
-                {myPositions.length} {myPositions.length === 1 ? "posición" : "posiciones"} abiertas
+              <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
+                {myPositions.length} {myPositions.length === 1 ? "posición" : "posiciones"}
               </span>
             )}
           </div>
@@ -440,9 +477,9 @@ export default function Trading() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Comisión de apertura ({(feeRate * 100).toFixed(1)}%):</span>
-                <span className="text-red-600 font-bold">
-                  -{formatNumber(openingFee, 4)} {balanceSymbol}
+                <span className="text-gray-600">Apalancamiento:</span>
+                <span className="font-bold text-indigo-600">
+                  {leverage}x
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -478,53 +515,73 @@ export default function Trading() {
             <h3 className="text-lg font-bold text-gray-900">
               Tus Posiciones ({myPositions.length})
             </h3>
-            {myPositions.map((position) => (
-              <div key={position.id} className="card-modern p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className={`text-lg font-bold ${
-                      position.type === "long" ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {position.type.toUpperCase()} {position.leverage}x
+            {myPositions.map((position) => {
+              // Calcular P&L en tiempo real
+              const currentMarketPrice = selectedPair === "NUMA/WLD" ? numaPrice : wldPrice;
+              const { pnl, pnlPercentage } = calculatePnL(
+                position.entryPrice,
+                currentMarketPrice,
+                position.amount,
+                position.leverage,
+                position.type === "long",
+                position.symbol
+              );
+              
+              return (
+                <div key={position.id} className="card-modern p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className={`text-lg font-bold ${
+                        position.type === "long" ? "text-green-600" : "text-red-600"
+                      }`}>
+                        {position.type.toUpperCase()} {position.leverage}x
+                      </div>
+                      <div className="text-sm text-gray-500">{position.symbol}</div>
                     </div>
-                    <div className="text-sm text-gray-500">{position.symbol}</div>
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${
+                        pnl >= 0 ? "text-green-600" : "text-red-600"
+                      }`}>
+                        {pnl >= 0 ? "+" : ""}{formatNumber(pnl, 2)}
+                      </div>
+                      <div className={`text-sm font-medium ${
+                        pnlPercentage >= 0 ? "text-green-600" : "text-red-600"
+                      }`}>
+                        {pnlPercentage >= 0 ? "+" : ""}{pnlPercentage.toFixed(2)}%
+                      </div>
+                    </div>
                   </div>
-                  <div className={`text-3xl font-bold ${
-                    position.pnl >= 0 ? "text-green-600" : "text-red-600"
-                  }`}>
-                    {position.pnl >= 0 ? "+" : ""}{formatNumber(position.pnl, 2)}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-4 bg-gray-50 rounded-lg p-3">
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Entrada</div>
-                    <div className="font-bold text-gray-900">
-                      {formatNumber(position.entryPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                  <div className="grid grid-cols-3 gap-4 mb-4 bg-gray-50 rounded-lg p-3">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Entrada</div>
+                      <div className="font-bold text-gray-900">
+                        {formatNumber(position.entryPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Actual</div>
+                      <div className="font-bold text-indigo-600">
+                        {formatNumber(currentMarketPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Monto</div>
+                      <div className="font-bold text-gray-900">
+                        {formatNumber(position.amount, 2)}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Actual</div>
-                    <div className="font-bold text-indigo-600">
-                      {formatNumber(position.currentPrice || currentPrice, selectedPair === "NUMA/WLD" ? 6 : 2)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Monto</div>
-                    <div className="font-bold text-gray-900">
-                      {formatNumber(position.amount, 2)}
-                    </div>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => handleClosePosition(position.id)}
-                  className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 active:scale-[0.98] transition-all"
-                >
-                  Cerrar Posición
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() => handleClosePosition(position.id)}
+                    className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 active:scale-[0.98] transition-all"
+                  >
+                    Cerrar Posición
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
