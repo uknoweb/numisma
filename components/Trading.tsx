@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import {
   ArrowLeft,
@@ -28,8 +28,6 @@ export default function Trading() {
   const [leverage, setLeverage] = useState(5);
   const [amount, setAmount] = useState("");
   const [showGuide, setShowGuide] = useState(false);
-  
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Precios en tiempo real
   const [wldPrice, setWldPrice] = useState(2.5);
@@ -104,105 +102,6 @@ export default function Trading() {
       }
     });
   }, [wldPrice, numaPrice, positions, user?.balanceWld, user?.balanceNuma, closePosition]);
-
-  // Dibujar gráfica en Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Configurar tamaño del canvas
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    const width = rect.width;
-    const height = rect.height;
-    const padding = 20;
-
-    // Limpiar canvas
-    ctx.clearRect(0, 0, width, height);
-
-    // Calcular rango de precios
-    const history = selectedPair === "WLD/USDT" ? wldPriceHistory : numaPriceHistory;
-    const maxPrice = Math.max(...history);
-    const minPrice = Math.min(...history);
-    const priceRange = maxPrice - minPrice || 0.01;
-
-    // Dibujar grid
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    
-    // Línea horizontal del medio
-    ctx.beginPath();
-    ctx.moveTo(padding, height / 2);
-    ctx.lineTo(width - padding, height / 2);
-    ctx.stroke();
-    
-    // Líneas verticales
-    ctx.setLineDash([]);
-    for (let i = 1; i <= 3; i++) {
-      const x = padding + (width - 2 * padding) * (i / 4);
-      ctx.beginPath();
-      ctx.moveTo(x, padding);
-      ctx.lineTo(x, height - padding);
-      ctx.stroke();
-    }
-
-    // Dibujar línea de precio
-    if (history.length > 1) {
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-
-      history.forEach((price, i) => {
-        const x = padding + (i / (history.length - 1)) * (width - 2 * padding);
-        const y = padding + ((maxPrice - price) / priceRange) * (height - 2 * padding);
-        
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-
-      ctx.stroke();
-    }
-
-    // Dibujar marcadores de posiciones
-    const myPositions = positions.filter(
-      p => p.status === "open" && p.symbol === selectedPair
-    );
-
-    myPositions.forEach((pos) => {
-      const entryY = padding + ((maxPrice - pos.entryPrice) / priceRange) * (height - 2 * padding);
-      const color = pos.type === "long" ? "#22c55e" : "#ef4444";
-
-      // Línea punteada
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 4]);
-      ctx.globalAlpha = 0.7;
-      ctx.beginPath();
-      ctx.moveTo(padding, entryY);
-      ctx.lineTo(width - padding, entryY);
-      ctx.stroke();
-
-      // Círculo
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 1;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(width - padding - 10, entryY, 6, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-  }, [wldPriceHistory, numaPriceHistory, selectedPair, positions]);
 
   // Validar que el usuario exista
   if (!user) return null;
@@ -352,10 +251,61 @@ export default function Trading() {
           {/* Gráfica simple con líneas */}
           <div className="h-64 bg-gray-50 rounded-xl overflow-hidden relative">
             <div className="absolute inset-0 p-4">
-              <canvas 
-                ref={canvasRef}
-                className="w-full h-full block"
-              />
+              <svg 
+                width="100%" 
+                height="100%" 
+                viewBox="0 0 500 200" 
+                preserveAspectRatio="none"
+                className="w-full h-full"
+              >
+                {/* Grid de fondo */}
+                <line x1="0" y1="100" x2="500" y2="100" stroke="#d1d5db" strokeWidth="1" strokeDasharray="5,5" />
+                <line x1="125" y1="0" x2="125" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                <line x1="250" y1="0" x2="250" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                <line x1="375" y1="0" x2="375" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+                
+                {/* Línea de precio */}
+                {priceHistory.length > 1 && (
+                  <polyline
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3"
+                    vectorEffect="non-scaling-stroke"
+                    points={priceHistory
+                      .map((price, i) => {
+                        const x = (i / (priceHistory.length - 1)) * 500;
+                        const y = ((maxPrice - price) / priceRange) * 200;
+                        return `${x},${y}`;
+                      })
+                      .join(" ")}
+                  />
+                )}
+
+                {/* Marcadores de posiciones abiertas */}
+                {myPositions.map((pos) => {
+                  const entryY = ((maxPrice - pos.entryPrice) / priceRange) * 200;
+                  return (
+                    <g key={pos.id}>
+                      <line
+                        x1="0"
+                        y1={entryY}
+                        x2="500"
+                        y2={entryY}
+                        stroke={pos.type === "long" ? "#22c55e" : "#ef4444"}
+                        strokeWidth="2"
+                        strokeDasharray="8,4"
+                        opacity="0.7"
+                      />
+                      <circle
+                        cx="480"
+                        cy={entryY}
+                        r="6"
+                        fill={pos.type === "long" ? "#22c55e" : "#ef4444"}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
             </div>
           </div>
 
