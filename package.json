@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "deploy:pool": "hardhat run scripts/deploy-pool.js --network worldchain-sepolia",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "test:oracle": "node scripts/test-oracle.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

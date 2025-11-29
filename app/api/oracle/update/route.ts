@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { createWalletClient, http, createPublicClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { worldchainSepolia } from "@/lib/wagmi";
+import { POOL_ABI, POOL_CONTRACT_ADDRESS } from "@/lib/contracts";
 
 /**
  * POST /api/oracle/update
@@ -34,12 +38,7 @@ export async function POST(request: Request) {
     console.log(`[Oracle] Updating WLD price: ${price} USD (${priceForContract} for contract)`);
 
     // 2. Actualizar precio en el contrato
-    // TODO: Implementar cuando tengamos el contrato deployed
-    // Por ahora solo logueamos
-    
-    const contractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS;
-
-    if (!contractAddress) {
+    if (!POOL_CONTRACT_ADDRESS) {
       console.warn("[Oracle] Contract address not configured, skipping on-chain update");
       return NextResponse.json({
         success: true,
@@ -51,29 +50,48 @@ export async function POST(request: Request) {
       });
     }
 
-    // Implementación con viem cuando tengamos el contrato deployed:
-    /*
-    const { createWalletClient, http } = await import("viem");
-    const { privateKeyToAccount } = await import("viem/accounts");
-    const { worldchain } = await import("@/lib/chains");
+    const oraclePrivateKey = process.env.ORACLE_PRIVATE_KEY;
+    if (!oraclePrivateKey) {
+      throw new Error("ORACLE_PRIVATE_KEY not configured");
+    }
 
-    const account = privateKeyToAccount(process.env.ORACLE_PRIVATE_KEY as `0x${string}`);
+    // Crear cuenta desde private key
+    const account = privateKeyToAccount(oraclePrivateKey as `0x${string}`);
     
-    const walletClient = createWalletClient({
-      account,
-      chain: worldchain,
-      transport: http(),
+    // Crear cliente público para verificar red
+    const publicClient = createPublicClient({
+      chain: worldchainSepolia,
+      transport: http(`https://worldchain-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
     });
 
+    // Crear cliente de wallet
+    const walletClient = createWalletClient({
+      account,
+      chain: worldchainSepolia,
+      transport: http(`https://worldchain-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
+    });
+
+    console.log(`[Oracle] Sending transaction from: ${account.address}`);
+    console.log(`[Oracle] Contract: ${POOL_CONTRACT_ADDRESS}`);
+    console.log(`[Oracle] New price: ${priceForContract}`);
+
+    // Llamar a updateWLDPrice en el contrato
     const hash = await walletClient.writeContract({
-      address: contractAddress as `0x${string}`,
-      abi: PoolABI,
+      address: POOL_CONTRACT_ADDRESS as `0x${string}`,
+      abi: POOL_ABI,
       functionName: "updateWLDPrice",
       args: [BigInt(priceForContract)],
     });
 
     console.log(`[Oracle] Transaction sent: ${hash}`);
-    */
+
+    // Esperar confirmación
+    const receipt = await publicClient.waitForTransactionReceipt({ 
+      hash,
+      confirmations: 1,
+    });
+
+    console.log(`[Oracle] Transaction confirmed in block: ${receipt.blockNumber}`);
 
     return NextResponse.json({
       success: true,
@@ -82,7 +100,9 @@ export async function POST(request: Request) {
       priceForContract,
       source,
       timestamp: Math.floor(Date.now() / 1000),
-      // txHash: hash, // Descomentar cuando esté implementado
+      txHash: hash,
+      blockNumber: receipt.blockNumber.toString(),
+      gasUsed: receipt.gasUsed.toString(),
     });
   } catch (error) {
     console.error("[Oracle] Error updating price:", error);
