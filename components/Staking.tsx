@@ -395,7 +395,7 @@ export default function Staking() {
                   }`}
                 >
                   <div className="text-lg font-bold text-gray-900 mb-1">Plus</div>
-                  <div className="text-sm text-gray-500 mb-2">30 NUMA/día</div>
+                  <div className="text-sm text-gray-500 mb-2">200 NUMA/día</div>
                   <div className="text-xl font-bold text-blue-600">{MEMBERSHIP_PRICES.plus} WLD</div>
                 </button>
                 <button
@@ -407,7 +407,7 @@ export default function Staking() {
                   }`}
                 >
                   <div className="text-lg font-bold text-gray-900 mb-1">VIP</div>
-                  <div className="text-sm text-gray-500 mb-2">50 NUMA/día</div>
+                  <div className="text-sm text-gray-500 mb-2">500 NUMA/día</div>
                   <div className="text-xl font-bold text-purple-600">{MEMBERSHIP_PRICES.vip} WLD</div>
                 </button>
               </div>
@@ -739,7 +739,7 @@ export default function Staking() {
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
                       <span className="text-blue-600">✓</span>
-                      <span>Recompensas diarias: <strong>200 NUMA</strong> (después de 3 meses: <strong>500 NUMA</strong>)</span>
+                      <span>Recompensas diarias: <strong>200 NUMA</strong></span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-blue-600">✓</span>
@@ -758,7 +758,7 @@ export default function Staking() {
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
                       <span className="text-purple-600">✓</span>
-                      <span>Recompensas diarias: <strong>500 NUMA</strong> (después de 3 meses: <strong>1000 NUMA</strong>)</span>
+                      <span>Recompensas diarias: <strong>500 NUMA</strong></span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-purple-600">✓</span>
