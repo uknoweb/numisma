@@ -15,6 +15,11 @@
         "internalType": "address",
         "name": "_wldToken",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_membershipManager",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -81,6 +86,19 @@
       }
     ],
     "name": "FundingFeePaid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newManager",
+        "type": "address"
+      }
+    ],
+    "name": "MembershipManagerUpdated",
     "type": "event"
   },
   {
@@ -588,6 +606,19 @@
   },
   {
     "inputs": [],
+    "name": "membershipManager",
+    "outputs": [
+      {
+        "internalType": "contract IMembershipManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "numaToken",
     "outputs": [
       {
@@ -758,6 +789,19 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_membershipManager",
+        "type": "address"
+      }
+    ],
+    "name": "setMembershipManager",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

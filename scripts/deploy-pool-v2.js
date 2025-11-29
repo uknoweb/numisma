@@ -31,6 +31,17 @@ async function main() {
     process.exit(1);
   }
 
+  // Load MembershipManager address (optional)
+  let membershipAddress = "0x0000000000000000000000000000000000000000"; // Default: no membership
+  try {
+    const membershipDeployment = require("../deployment-membership.json");
+    membershipAddress = membershipDeployment.contractAddress;
+    console.log("✅ MembershipManager:", membershipAddress);
+  } catch (e) {
+    console.log("⚠️  MembershipManager not found - Pool will allow any leverage");
+    console.log("   Deploy membership first: npm run deploy:membership");
+  }
+
   // Initial WLD price (2.50 USD with 6 decimals)
   const initialWLDPrice = 2500000; // $2.50
 
@@ -39,7 +50,8 @@ async function main() {
   const pool = await Pool.deploy(
     initialWLDPrice,
     numaAddress,
-    wldAddress
+    wldAddress,
+    membershipAddress
   );
 
   await pool.waitForDeployment();
@@ -66,6 +78,7 @@ async function main() {
     initialWLDPrice: initialWLDPrice.toString(),
     numaTokenAddress: numaAddress,
     wldTokenAddress: wldAddress,
+    membershipManagerAddress: membershipAddress,
     deployedAt: new Date().toISOString(),
     blockNumber: await hre.ethers.provider.getBlockNumber(),
     version: "V2"
@@ -84,7 +97,7 @@ async function main() {
   console.log("   npm run fund:pool");
   
   console.log("\n3. Verify on explorer:");
-  console.log(`   npx hardhat verify --network ${hre.network.name} ${poolAddress} ${initialWLDPrice} ${numaAddress} ${wldAddress}`);
+  console.log(`   npx hardhat verify --network ${hre.network.name} ${poolAddress} ${initialWLDPrice} ${numaAddress} ${wldAddress} ${membershipAddress}`);
 
   console.log("\n🔗 Explorer:");
   console.log(`   https://worldchain-sepolia.explorer.alchemy.com/address/${poolAddress}`);

@@ -7,6 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
+ * @title IMembershipManager
+ * @notice Interfaz para verificar niveles de membresía
+ */
+interface IMembershipManager {
+    function getMaxLeverage(address user) external view returns (uint256);
+}
+
+/**
  * @title PoolCentinelaRegeneracionV2
  * @notice Pool de Riesgo con soporte para tokens ERC-20 (NUMA y WLD)
  * @dev NUEVA VERSIÓN - Usa tokens reales en lugar de balances internos
@@ -16,6 +24,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * - Usa WLD token (ERC-20) para colateral en par WLD/USDT  
  * - Deposit/Withdraw de tokens
  * - Pool tiene liquidez en NUMA y WLD para pagar ganancias
+ * - Verifica membresía antes de permitir leverage
  */
 contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -24,6 +33,7 @@ contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
     
     IERC20 public numaToken;
     IERC20 public wldToken;
+    IMembershipManager public membershipManager;
     
     // ========== ESTRUCTURAS ==========
     
@@ -107,13 +117,15 @@ contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
     
     event WLDPriceUpdated(uint256 newPrice);
     event PoolFunded(address token, uint256 amount);
+    event MembershipManagerUpdated(address indexed newManager);
     
     // ========== CONSTRUCTOR ==========
     
     constructor(
         uint256 _initialWLDPrice,
         address _numaToken,
-        address _wldToken
+        address _wldToken,
+        address _membershipManager
     ) Ownable(msg.sender) {
         require(_numaToken != address(0), "Invalid NUMA token");
         require(_wldToken != address(0), "Invalid WLD token");
@@ -121,6 +133,11 @@ contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
         wldPriceUSDT = _initialWLDPrice; // Ej: 2.50 USDT = 2500000 (6 decimales)
         numaToken = IERC20(_numaToken);
         wldToken = IERC20(_wldToken);
+        
+        // MembershipManager es opcional (puede ser address(0) inicialmente)
+        if (_membershipManager != address(0)) {
+            membershipManager = IMembershipManager(_membershipManager);
+        }
     }
     
     // ========== FUNCIONES DE DEPÓSITO/RETIRO ==========
@@ -211,6 +228,12 @@ contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
         uint256 leverage
     ) external nonReentrant returns (uint256 positionId) {
         require(leverage >= 1 && leverage <= 500, "Leverage must be 1-500x");
+        
+        // Verificar límite de leverage según membresía
+        if (address(membershipManager) != address(0)) {
+            uint256 maxAllowedLeverage = membershipManager.getMaxLeverage(msg.sender);
+            require(leverage <= maxAllowedLeverage, "Leverage exceeds membership limit");
+        }
         
         // Determinar colateral mínimo y balance según el par
         uint256 minCollateral;
@@ -431,6 +454,14 @@ contract PoolCentinelaRegeneracionV2 is Ownable, ReentrancyGuard {
     }
     
     // ========== FUNCIONES ADMINISTRATIVAS ==========
+    
+    /**
+     * @notice Actualizar dirección del MembershipManager
+     */
+    function setMembershipManager(address _membershipManager) external onlyOwner {
+        membershipManager = IMembershipManager(_membershipManager);
+        emit MembershipManagerUpdated(_membershipManager);
+    }
     
     /**
      * @notice Owner puede fondear el pool con liquidez
