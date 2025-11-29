@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, useEffect, ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
 import { useDatabase } from "@/hooks/useDatabase";
