@@ -1,0 +1,8 @@
+{
+  "network": "worldchain-sepolia",
+  "contractAddress": "0xED888019DE2e5922E8c65f68Cf10d016ad330E60",
+  "deployer": "0xC570167Cf09D4f001d07786ee66da35909709370",
+  "initialWLDPrice": 2500000,
+  "deployedAt": "2025-11-29T08:41:09.952Z",
+  "blockNumber": 21929123
+}

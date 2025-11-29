@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:pool": "hardhat run scripts/deploy-pool.js --network worldchain-sepolia",
+    "compile": "hardhat compile"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -32,7 +34,7 @@
     "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@openzeppelin/contracts": "^5.4.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
@@ -41,6 +43,7 @@
     "eslint-config-next": "16.0.5",
     "hardhat": "^2.27.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
