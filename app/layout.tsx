@@ -1,16 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { MiniKitProvider } from "@/components/MiniKitProvider";
 
 export const metadata: Metadata = {
   title: "Numisma - Plataforma Educativa de Trading",
   description: "Aprende trading de futuros con el token NUMA. Verificación World ID, apalancamiento hasta x500, y sistema de Pioneros.",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
