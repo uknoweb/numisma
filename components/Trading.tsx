@@ -37,19 +37,6 @@ export default function Trading() {
   const [wldPriceHistory, setWldPriceHistory] = useState<number[]>([2.5]);
   const [numaPriceHistory, setNumaPriceHistory] = useState<number[]>([0.001]);
 
-  if (!user) return null;
-
-  const currentPrice = selectedPair === "WLD/USDT" ? wldPrice : numaPrice;
-  const priceHistory = selectedPair === "WLD/USDT" ? wldPriceHistory : numaPriceHistory;
-  const amountNum = parseFloat(amount) || 0;
-  const availableBalance = selectedPair === "WLD/USDT" ? user.balanceWld : user.balanceNuma;
-  const balanceSymbol = selectedPair === "WLD/USDT" ? "WLD" : "NUMA";
-
-  // Comisiones
-  const feeRate = selectedPair === "WLD/USDT" ? 0.001 : 0.01; // 0.1% WLD, 1% NUMA
-  const openingFee = amountNum * feeRate;
-  const estimatedPnL1Percent = amountNum * leverage * 0.01;
-
   // Actualizar precio en tiempo real
   useEffect(() => {
     const interval = setInterval(() => {
@@ -71,6 +58,8 @@ export default function Trading() {
 
   // Actualizar P&L de posiciones y cerrar automáticamente si balance < 0.1
   useEffect(() => {
+    if (!user) return; // Validar que user exista
+    
     positions.filter(p => p.status === "open").forEach(position => {
       const currentMarketPrice = position.symbol === "NUMA/WLD" ? numaPrice : wldPrice;
       const { pnl } = calculatePnL(
@@ -100,7 +89,21 @@ export default function Trading() {
         }));
       }
     });
-  }, [wldPrice, numaPrice, positions, user.balanceWld, user.balanceNuma, closePosition]);
+  }, [wldPrice, numaPrice, positions, user?.balanceWld, user?.balanceNuma, closePosition]);
+
+  // Validar que el usuario exista
+  if (!user) return null;
+
+  const currentPrice = selectedPair === "WLD/USDT" ? wldPrice : numaPrice;
+  const priceHistory = selectedPair === "WLD/USDT" ? wldPriceHistory : numaPriceHistory;
+  const amountNum = parseFloat(amount) || 0;
+  const availableBalance = selectedPair === "WLD/USDT" ? user.balanceWld : user.balanceNuma;
+  const balanceSymbol = selectedPair === "WLD/USDT" ? "WLD" : "NUMA";
+
+  // Comisiones
+  const feeRate = selectedPair === "WLD/USDT" ? 0.001 : 0.01; // 0.1% WLD, 1% NUMA
+  const openingFee = amountNum * feeRate;
+  const estimatedPnL1Percent = amountNum * leverage * 0.01;
 
   const handleOpenPosition = () => {
     if (amountNum < 0.1) {
