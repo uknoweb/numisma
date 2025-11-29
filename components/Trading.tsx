@@ -33,9 +33,21 @@ export default function Trading() {
   const [wldPrice, setWldPrice] = useState(2.5);
   const [numaPrice, setNumaPrice] = useState(0.001);
   
-  // Historial de precios para la gráfica (últimos 50 puntos)
-  const [wldPriceHistory, setWldPriceHistory] = useState<number[]>([2.5]);
-  const [numaPriceHistory, setNumaPriceHistory] = useState<number[]>([0.001]);
+  // Historial de precios para la gráfica (últimos 50 puntos) - inicializar con datos
+  const [wldPriceHistory, setWldPriceHistory] = useState<number[]>(() => {
+    const initialHistory = [];
+    for (let i = 0; i < 50; i++) {
+      initialHistory.push(2.5 + (Math.random() * 0.2 - 0.1));
+    }
+    return initialHistory;
+  });
+  const [numaPriceHistory, setNumaPriceHistory] = useState<number[]>(() => {
+    const initialHistory = [];
+    for (let i = 0; i < 50; i++) {
+      initialHistory.push(0.001 + (Math.random() * 0.0002 - 0.0001));
+    }
+    return initialHistory;
+  });
 
   // Actualizar precio en tiempo real
   useEffect(() => {
@@ -237,27 +249,29 @@ export default function Trading() {
           </div>
 
           {/* Gráfica simple con líneas */}
-          <div className="h-64 bg-gray-50 rounded-xl p-4 relative">
-            <svg width="100%" height="100%" className="absolute inset-0">
+          <div className="h-64 bg-gray-50 rounded-xl p-4 relative overflow-hidden">
+            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-4">
               {/* Grid */}
-              <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#e5e7eb" strokeWidth="1" />
-              <line x1="25%" y1="0" x2="25%" y2="100%" stroke="#e5e7eb" strokeWidth="1" />
-              <line x1="50%" y1="0" x2="50%" y2="100%" stroke="#e5e7eb" strokeWidth="1" />
-              <line x1="75%" y1="0" x2="75%" y2="100%" stroke="#e5e7eb" strokeWidth="1" />
+              <line x1="0" y1="50" x2="100" y2="50" stroke="#e5e7eb" strokeWidth="0.2" />
+              <line x1="25" y1="0" x2="25" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
+              <line x1="50" y1="0" x2="50" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
+              <line x1="75" y1="0" x2="75" y2="100" stroke="#e5e7eb" strokeWidth="0.2" />
               
               {/* Línea de precio */}
-              <polyline
-                fill="none"
-                stroke="#3b82f6"
-                strokeWidth="2"
-                points={priceHistory
-                  .map((price, i) => {
-                    const x = (i / (priceHistory.length - 1)) * 100;
-                    const y = ((maxPrice - price) / priceRange) * 100;
-                    return `${x}%,${y}%`;
-                  })
-                  .join(" ")}
-              />
+              {priceHistory.length > 1 && (
+                <polyline
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="0.5"
+                  points={priceHistory
+                    .map((price, i) => {
+                      const x = (i / (priceHistory.length - 1)) * 100;
+                      const y = ((maxPrice - price) / priceRange) * 100;
+                      return `${x},${y}`;
+                    })
+                    .join(" ")}
+                />
+              )}
 
               {/* Marcadores de posiciones abiertas */}
               {myPositions.map((pos) => {
@@ -266,17 +280,17 @@ export default function Trading() {
                   <g key={pos.id}>
                     <line
                       x1="0"
-                      y1={`${entryY}%`}
-                      x2="100%"
-                      y2={`${entryY}%`}
+                      y1={entryY}
+                      x2="100"
+                      y2={entryY}
                       stroke={pos.type === "long" ? "#22c55e" : "#ef4444"}
-                      strokeWidth="1"
-                      strokeDasharray="4"
+                      strokeWidth="0.3"
+                      strokeDasharray="2"
                     />
                     <circle
-                      cx="95%"
-                      cy={`${entryY}%`}
-                      r="4"
+                      cx="95"
+                      cy={entryY}
+                      r="1.5"
                       fill={pos.type === "long" ? "#22c55e" : "#ef4444"}
                     />
                   </g>
