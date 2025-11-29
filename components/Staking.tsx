@@ -853,16 +853,6 @@ export default function Staking() {
                     </div>
                   </div>
 
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-xs font-bold text-red-900 mb-1">⚠️ Advertencia Importante:</p>
-                    <div className="text-xs text-red-800 space-y-1">
-                      <p>• Si tomas un crédito, debes pagar en <strong>1 año máximo</strong></p>
-                      <p>• En caso de incumplimiento: <strong>Wallet congelada</strong></p>
-                      <p>• Después de 1 año sin pago: <strong>Fondos confiscados</strong></p>
-                      <p>• Si pierdes consecutividad: <strong>Línea de crédito se reinicia</strong></p>
-                    </div>
-                  </div>
-
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm text-gray-600">Costo (3 meses - Primer año):</span>
