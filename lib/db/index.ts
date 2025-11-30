@@ -13,6 +13,51 @@ import * as schema from "./schema";
 export const db = drizzle(vercelSql, { schema });
 
 /**
+ * Obtener balances reales de blockchain
+ */
+export async function getRealBalances(walletAddress: string): Promise<{ numa: number; wld: number }> {
+  try {
+    // Importación dinámica para evitar problemas de SSR
+    const { publicClient } = await import("./blockchain");
+    const { NUMA_TOKEN_ABI } = await import("./blockchain");
+    
+    const numaAddress = process.env.NEXT_PUBLIC_NUMA_TOKEN_ADDRESS as `0x${string}`;
+    const wldAddress = process.env.NEXT_PUBLIC_WLD_TOKEN_ADDRESS as `0x${string}`;
+    
+    if (!numaAddress || !wldAddress) {
+      console.warn("Token addresses not configured, using default balances");
+      return { numa: 0, wld: 0 };
+    }
+    
+    // Consultar balances en paralelo
+    const [numaBalance, wldBalance] = await Promise.all([
+      publicClient.readContract({
+        address: numaAddress,
+        abi: NUMA_TOKEN_ABI,
+        functionName: 'balanceOf',
+        args: [walletAddress as `0x${string}`],
+      }),
+      publicClient.readContract({
+        address: wldAddress,
+        abi: NUMA_TOKEN_ABI, // WLD usa el mismo ABI (ERC20)
+        functionName: 'balanceOf',
+        args: [walletAddress as `0x${string}`],
+      }),
+    ]);
+    
+    // Convertir de wei a unidades
+    const numa = Number(numaBalance) / 1e18;
+    const wld = Number(wldBalance) / 1e18;
+    
+    return { numa, wld };
+  } catch (error) {
+    console.error("Error fetching real balances:", error);
+    // En caso de error, retornar 0 (el usuario puede depositar después)
+    return { numa: 0, wld: 0 };
+  }
+}
+
+/**
  * Helper para testing/desarrollo - Crear usuario de prueba
  */
 export async function createTestUser() {
@@ -39,21 +84,31 @@ export async function getOrCreateUser(walletAddress: string, worldIdHash: string
     .limit(1);
   
   if (existingUser.length > 0) {
-    // Actualizar último login
-    await db
-      .update(schema.users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(schema.users.id, existingUser[0].id));
+    // Usuario existente: actualizar último login Y balances reales
+    const realBalances = await getRealBalances(walletAddress);
     
-    return existingUser[0];
+    const updated = await db
+      .update(schema.users)
+      .set({ 
+        lastLoginAt: new Date(),
+        balanceNuma: realBalances.numa,
+        balanceWld: realBalances.wld,
+      })
+      .where(eq(schema.users.id, existingUser[0].id))
+      .returning();
+    
+    return updated[0];
   }
   
-  // Crear nuevo usuario
+  // Nuevo usuario: obtener balances reales de blockchain
+  const realBalances = await getRealBalances(walletAddress);
+  
+  // Crear nuevo usuario con balances reales
   const newUser = await db.insert(schema.users).values({
     walletAddress,
     worldIdHash,
-    balanceNuma: 1000, // Balance inicial de bienvenida
-    balanceWld: 10,
+    balanceNuma: realBalances.numa,
+    balanceWld: realBalances.wld,
     membershipTier: "free",
   }).returning();
   
