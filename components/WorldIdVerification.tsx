@@ -17,11 +17,16 @@ export default function WorldIdVerification() {
     setError(null);
 
     try {
+      // Obtener wallet address real de MiniKit
+      const { MiniKit } = await import('@worldcoin/minikit-js');
+      const walletAddress = MiniKit.walletAddress || "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"; // Fallback solo para desarrollo
+      
+      console.log("🔐 Wallet Address:", walletAddress);
+      
       // Intentar verificación real con World ID
       const result = await verifyWithWorldID();
       
       let worldIdHash: string;
-      let walletAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"; // Default para desarrollo
       
       if (result.success && result.nullifier_hash) {
         // Verificación exitosa con World ID real
@@ -33,7 +38,7 @@ export default function WorldIdVerification() {
         console.warn("⚠️ World ID verification not available, using simulation mode");
       }
 
-      // Autenticar con la base de datos
+      // Autenticar con la base de datos (usa balances reales de blockchain)
       const { user: dbUser, isNewUser } = await loginUser(walletAddress, worldIdHash);
       
       if (isNewUser) {
