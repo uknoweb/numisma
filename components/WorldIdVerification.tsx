@@ -19,7 +19,21 @@ export default function WorldIdVerification() {
     try {
       // Obtener wallet address real de MiniKit
       const { MiniKit } = await import('@worldcoin/minikit-js');
-      const walletAddress = MiniKit.walletAddress || "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"; // Fallback solo para desarrollo
+      
+      // Intentar obtener wallet de MiniKit (puede estar disponible o no según la versión)
+      let walletAddress = MiniKit.walletAddress;
+      
+      // Si no está disponible, intentar obtenerlo del contexto de World App
+      if (!walletAddress && typeof window !== 'undefined') {
+        // @ts-ignore - Acceder a la API nativa de World App si está disponible
+        walletAddress = window.worldApp?.walletAddress;
+      }
+      
+      // Si aún no tenemos wallet, usar una temporal para desarrollo
+      if (!walletAddress) {
+        console.warn("⚠️ No se pudo obtener wallet address de MiniKit, generando temporal");
+        walletAddress = `0x${Date.now().toString(16).padStart(40, '0')}`;
+      }
       
       console.log("🔐 Wallet Address:", walletAddress);
       
