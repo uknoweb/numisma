@@ -10,10 +10,15 @@ import { worldchain, worldchainSepolia } from 'viem/chains';
 const isDevelopment = process.env.NODE_ENV === 'development';
 export const currentChain = isDevelopment ? worldchainSepolia : worldchain;
 
+// RPC público de World Chain (no requiere API key)
+const RPC_URL = isDevelopment 
+  ? 'https://worldchain-sepolia.g.alchemy.com/public' 
+  : 'https://worldchain-mainnet.g.alchemy.com/public';
+
 // Cliente público (lectura)
 export const publicClient = createPublicClient({
   chain: currentChain,
-  transport: http(`https://worldchain-${isDevelopment ? 'sepolia' : 'mainnet'}.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
+  transport: http(RPC_URL),
 });
 
 // Wallet client (escritura) - se inicializa con window.ethereum
