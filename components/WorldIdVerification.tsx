@@ -12,6 +12,14 @@ export default function WorldIdVerification() {
   const setWorldIdVerified = useAppStore((state) => state.setWorldIdVerified);
   const { loginUser } = useDatabase();
 
+  // TEMPORAL: Botón de debug para limpiar cache
+  const clearCache = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('numisma-storage');
+      window.location.reload();
+    }
+  };
+
   const handleVerify = async () => {
     setIsVerifying(true);
     setError(null);
@@ -131,6 +139,14 @@ export default function WorldIdVerification() {
                 Verificar con World ID
               </>
             )}
+          </button>
+
+          {/* TEMPORAL: Botón de debug para limpiar cache */}
+          <button
+            onClick={clearCache}
+            className="w-full h-10 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+          >
+            🗑️ Limpiar Cache (Debug)
           </button>
 
           {error && (
