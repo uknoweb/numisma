@@ -1,4 +1,3 @@
 {
-  "_comment": "Cron disabled - requires Pro plan for frequent execution",
-  "crons": []
+  "buildCommand": "next build"
 }
