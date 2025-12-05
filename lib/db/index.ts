@@ -18,8 +18,8 @@ export const db = drizzle(vercelSql, { schema });
 export async function getRealBalances(walletAddress: string): Promise<{ numa: number; wld: number }> {
   try {
     // Importación dinámica para evitar problemas de SSR
-    const { publicClient } = await import("./blockchain");
-    const { NUMA_TOKEN_ABI } = await import("./blockchain");
+    const { publicClient } = await import("../blockchain");
+    const { NUMA_TOKEN_ABI } = await import("../blockchain");
     
     const numaAddress = process.env.NEXT_PUBLIC_NUMA_TOKEN_ADDRESS as `0x${string}`;
     const wldAddress = process.env.NEXT_PUBLIC_WLD_TOKEN_ADDRESS as `0x${string}`;
