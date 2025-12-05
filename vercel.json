@@ -1,8 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/oracle/update",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "_comment": "Cron disabled - requires Pro plan for frequent execution",
+  "crons": []
 }
