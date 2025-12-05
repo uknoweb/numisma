@@ -90,23 +90,26 @@ export default function WorldIdVerification() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between p-6 bg-black">
-      <div className="flex-1" />
-      
-      {/* Logo y Título Central */}
-      <div className="flex flex-col items-center space-y-6 animate-fade-in">
-        {/* Logo */}
-        <div className="w-32 h-32 relative">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-between p-6 relative overflow-hidden"
+      style={{
+        background: 'radial-gradient(circle at 50% 20%, rgba(255, 215, 0, 0.15) 0%, rgba(75, 75, 75, 1) 40%, rgba(50, 50, 50, 1) 100%)'
+      }}
+    >
+      {/* Logo y Título en la parte superior */}
+      <div className="flex flex-col items-center space-y-8 mt-16 animate-fade-in">
+        {/* Logo más grande */}
+        <div className="w-48 h-48 relative">
           <img 
             src="/numisma.png" 
             alt="Numisma Logo" 
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain drop-shadow-2xl"
           />
         </div>
         
         {/* Título con efecto neón dorado */}
         <h1 
-          className="text-6xl font-bold tracking-wider"
+          className="text-7xl font-bold tracking-wider"
           style={{
             color: '#FFD700',
             textShadow: `
@@ -123,37 +126,34 @@ export default function WorldIdVerification() {
       
       <div className="flex-1" />
       
-      {/* Botón en la parte inferior */}
-      <div className="w-full max-w-md space-y-4 pb-8">
+      {/* Botón en la parte inferior con color contrastante */}
+      <div className="w-full max-w-md space-y-4 pb-12">
         <button
           onClick={handleVerify}
           disabled={isVerifying}
-          className="btn-primary w-full h-14 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+            color: '#1a1a1a',
+            boxShadow: '0 8px 32px rgba(255, 215, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.3)'
+          }}
         >
           {isVerifying ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin" />
               Verificando...
             </>
           ) : (
             <>
-              <Shield className="w-5 h-5" />
+              <Shield className="w-6 h-6" />
               Verificar con World ID
             </>
           )}
         </button>
 
-        {/* TEMPORAL: Botón de debug para limpiar cache */}
-        <button
-          onClick={clearCache}
-          className="w-full h-10 text-xs bg-red-900 text-red-300 rounded-lg hover:bg-red-800 transition-colors font-medium"
-        >
-          🗑️ Limpiar Cache (Debug)
-        </button>
-
         {error && (
-          <div className="bg-red-900/20 border border-red-500 rounded-xl p-3 text-center">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4 text-center backdrop-blur-sm">
+            <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
       </div>
