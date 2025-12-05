@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * WorldID Verification Component
+ * Diseño: Fondo negro, logo central, título neón dorado
+ */
+
 import { useState, useEffect } from "react";
 import { Shield, Loader2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
