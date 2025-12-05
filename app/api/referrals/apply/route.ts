@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que el usuario no haya usado un código antes
+    const existingReferral = await sql`
       SELECT * FROM referrals WHERE referred_id = ${userId}
     `;
 
