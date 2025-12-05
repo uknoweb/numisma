@@ -112,16 +112,10 @@ export default function WorldIdVerification() {
         <div className="flex flex-col items-center space-y-4 animate-fade-in">
           {/* Logo */}
           <div className="w-28 h-28 relative">
-            <div 
-              className="absolute inset-0 rounded-full blur-xl opacity-50"
-              style={{
-                background: 'radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, transparent 70%)'
-              }}
-            />
             <img 
               src="/numisma.png" 
               alt="Numisma Logo" 
-              className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
+              className="w-full h-full object-contain drop-shadow-2xl"
             />
           </div>
           
