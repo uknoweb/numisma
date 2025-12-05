@@ -85,80 +85,72 @@ export default function WorldIdVerification() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
+    <div className="min-h-screen flex flex-col items-center justify-between p-6 bg-black">
+      <div className="flex-1" />
+      
+      {/* Logo y Título Central */}
+      <div className="flex flex-col items-center space-y-6 animate-fade-in">
         {/* Logo */}
-        <div className="text-center space-y-4">
-          <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
-            <Shield className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-5xl font-bold text-gray-900">Numisma</h1>
-          <p className="text-gray-600">Plataforma educativa de trading</p>
+        <div className="w-32 h-32 relative">
+          <img 
+            src="/numisma.png" 
+            alt="Numisma Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
-
-        {/* Card */}
-        <div className="card-modern p-8 space-y-6">
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-900">
-              🔐 Verificación Exclusiva
-            </h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              El acceso a <span className="text-indigo-600 font-semibold">Numisma</span> es exclusivo para usuarios verificados con{" "}
-              <span className="text-gray-900 font-semibold">World ID</span>. Esto garantiza que todos los participantes son personas únicas.
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-sm text-gray-700">Seguridad garantizada</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-sm text-gray-700">Smart Contracts blindados</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-sm text-gray-700">World Chain powered</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleVerify}
-            disabled={isVerifying}
-            className="btn-primary w-full h-14 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50"
-          >
-            {isVerifying ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              <>
-                <Shield className="w-5 h-5" />
-                Verificar con World ID
-              </>
-            )}
-          </button>
-
-          {/* TEMPORAL: Botón de debug para limpiar cache */}
-          <button
-            onClick={clearCache}
-            className="w-full h-10 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-          >
-            🗑️ Limpiar Cache (Debug)
-          </button>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
+        
+        {/* Título con efecto neón dorado */}
+        <h1 
+          className="text-6xl font-bold tracking-wider"
+          style={{
+            color: '#FFD700',
+            textShadow: `
+              0 0 10px rgba(255, 215, 0, 0.8),
+              0 0 20px rgba(255, 215, 0, 0.6),
+              0 0 30px rgba(255, 215, 0, 0.4),
+              0 0 40px rgba(255, 215, 0, 0.2)
+            `
+          }}
+        >
+          NUMISMA
+        </h1>
+      </div>
+      
+      <div className="flex-1" />
+      
+      {/* Botón en la parte inferior */}
+      <div className="w-full max-w-md space-y-4 pb-8">
+        <button
+          onClick={handleVerify}
+          disabled={isVerifying}
+          className="btn-primary w-full h-14 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50"
+        >
+          {isVerifying ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Verificando...
+            </>
+          ) : (
+            <>
+              <Shield className="w-5 h-5" />
+              Verificar con World ID
+            </>
           )}
+        </button>
 
-          <p className="text-xs text-center text-gray-500 leading-relaxed">
-            Al continuar, aceptas los términos de Numisma y la verificación mediante World ID.
-          </p>
-        </div>
+        {/* TEMPORAL: Botón de debug para limpiar cache */}
+        <button
+          onClick={clearCache}
+          className="w-full h-10 text-xs bg-red-900 text-red-300 rounded-lg hover:bg-red-800 transition-colors font-medium"
+        >
+          🗑️ Limpiar Cache (Debug)
+        </button>
+
+        {error && (
+          <div className="bg-red-900/20 border border-red-500 rounded-xl p-3 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );
