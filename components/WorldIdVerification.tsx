@@ -93,66 +93,99 @@ export default function WorldIdVerification() {
     <div 
       className="min-h-screen flex flex-col items-center justify-between p-6 relative overflow-hidden"
       style={{
-        background: 'radial-gradient(circle at 50% 20%, rgba(255, 215, 0, 0.15) 0%, rgba(75, 75, 75, 1) 40%, rgba(50, 50, 50, 1) 100%)'
+        background: 'linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0f1420 100%)'
       }}
     >
+      {/* Efectos de fondo futuristas */}
+      <div className="absolute inset-0 opacity-30">
+        <div 
+          className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl"
+          style={{
+            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)'
+          }}
+        />
+      </div>
+
       {/* Logo y Título en la parte superior */}
-      <div className="flex flex-col items-center space-y-8 mt-16 animate-fade-in">
-        {/* Logo más grande */}
-        <div className="w-48 h-48 relative">
+      <div className="flex flex-col items-center space-y-6 mt-20 animate-fade-in relative z-10">
+        {/* Logo */}
+        <div className="w-40 h-40 relative">
+          <div 
+            className="absolute inset-0 rounded-full blur-2xl opacity-50"
+            style={{
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, transparent 70%)'
+            }}
+          />
           <img 
             src="/numisma.png" 
             alt="Numisma Logo" 
-            className="w-full h-full object-contain drop-shadow-2xl"
+            className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
           />
         </div>
         
-        {/* Título con efecto neón dorado */}
+        {/* Título futurista */}
         <h1 
-          className="text-7xl font-bold tracking-wider"
+          className="text-6xl font-bold tracking-[0.3em]"
           style={{
-            color: '#FFD700',
+            color: '#E0E7FF',
             textShadow: `
-              0 0 10px rgba(255, 215, 0, 0.8),
-              0 0 20px rgba(255, 215, 0, 0.6),
-              0 0 30px rgba(255, 215, 0, 0.4),
-              0 0 40px rgba(255, 215, 0, 0.2)
+              0 0 20px rgba(99, 102, 241, 0.8),
+              0 0 40px rgba(99, 102, 241, 0.4),
+              0 0 60px rgba(99, 102, 241, 0.2)
             `
           }}
         >
           NUMISMA
         </h1>
+        
+        {/* Línea decorativa */}
+        <div className="flex items-center gap-3 mt-4">
+          <div className="w-12 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+          <div className="w-2 h-2 rounded-full bg-indigo-400 shadow-lg shadow-indigo-500/50" />
+          <div className="w-12 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+        </div>
       </div>
       
       <div className="flex-1" />
       
-      {/* Botón en la parte inferior con color contrastante */}
-      <div className="w-full max-w-md space-y-4 pb-12">
+      {/* Botón profesional en la parte inferior */}
+      <div className="w-full max-w-md space-y-4 pb-16 relative z-10">
         <button
           onClick={handleVerify}
           disabled={isVerifying}
-          className="w-full h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+          className="group relative w-full h-14 text-base font-semibold flex items-center justify-center gap-3 rounded-xl overflow-hidden transition-all duration-300 disabled:opacity-50"
           style={{
-            background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
-            color: '#1a1a1a',
-            boxShadow: '0 8px 32px rgba(255, 215, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.3)'
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            boxShadow: '0 4px 24px rgba(99, 102, 241, 0.4), 0 0 40px rgba(99, 102, 241, 0.2)',
+            border: '1px solid rgba(139, 92, 246, 0.3)'
           }}
         >
-          {isVerifying ? (
-            <>
-              <Loader2 className="w-6 h-6 animate-spin" />
-              Verificando...
-            </>
-          ) : (
-            <>
-              <Shield className="w-6 h-6" />
-              Verificar con World ID
-            </>
-          )}
+          {/* Efecto de brillo al hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          
+          <div className="relative z-10 flex items-center gap-3 text-white">
+            {isVerifying ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="tracking-wide">Verificando...</span>
+              </>
+            ) : (
+              <>
+                <Shield className="w-5 h-5" />
+                <span className="tracking-wide">Verificar con World ID</span>
+              </>
+            )}
+          </div>
         </button>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div 
+            className="rounded-xl p-4 text-center backdrop-blur-sm border"
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              borderColor: 'rgba(239, 68, 68, 0.3)'
+            }}
+          >
             <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
